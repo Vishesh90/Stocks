@@ -91,6 +91,9 @@ def fetch_dhan(
     WHY: Dhan provides 5 years of intraday data — the deepest free source
     available for Indian markets. This is our primary backtest data source.
 
+    For intraday intervals, Dhan limits each call to 90 days. This function
+    automatically batches requests across the full date range and concatenates.
+
     Returns None if Dhan credentials are not configured (fallback to yfinance).
     """
     if not settings.dhan_access_token:
@@ -98,6 +101,8 @@ def fetch_dhan(
 
     try:
         from dhanhq import dhanhq
+        from datetime import datetime, timedelta
+
         dhan = dhanhq(settings.dhan_client_id, settings.dhan_access_token)
 
         if interval == "1d":
@@ -105,28 +110,83 @@ def fetch_dhan(
                 security_id=security_id,
                 exchange_segment=exchange_segment,
                 instrument_type=instrument_type,
+                expiry_code=0,
                 from_date=from_date,
                 to_date=to_date,
             )
+            return _parse_dhan_response(resp)
         else:
-            interval_map = {"1m": "1", "5m": "5", "15m": "15", "25m": "25", "60m": "60"}
-            dhan_interval = interval_map.get(interval, "5")
-            resp = dhan.intraday_minute_data(
-                security_id=security_id,
-                exchange_segment=exchange_segment,
-                instrument_type=instrument_type,
-                interval=dhan_interval,
-                from_date=from_date,
-                to_date=to_date,
-            )
+            # Intraday: batch into 90-day windows to respect Dhan API limit
+            interval_map = {"1m": 1, "5m": 5, "15m": 15, "25m": 25, "60m": 60}
+            dhan_interval = interval_map.get(interval, 5)
 
-        if not resp or "data" not in resp:
-            return None
+            start = datetime.strptime(from_date, "%Y-%m-%d")
+            end   = datetime.strptime(to_date,   "%Y-%m-%d")
+            batch_days = 85  # Stay under 90-day limit with buffer
+            all_dfs = []
 
-        data = resp["data"]
-        if not data.get("open"):
-            return None
+            import requests as _requests
 
+            cursor = start
+            while cursor < end:
+                batch_end = min(cursor + timedelta(days=batch_days), end)
+                batch_from = cursor.strftime("%Y-%m-%d")
+                batch_to   = batch_end.strftime("%Y-%m-%d")
+
+                try:
+                    headers = {
+                        "access-token": settings.dhan_access_token,
+                        "Content-Type": "application/json",
+                        "Accept": "application/json",
+                    }
+                    payload = {
+                        "securityId": security_id,
+                        "exchangeSegment": exchange_segment,
+                        "instrument": instrument_type,
+                        "interval": str(dhan_interval),
+                        "fromDate": batch_from,
+                        "toDate": batch_to,
+                    }
+                    resp = _requests.post(
+                        "https://api.dhan.co/v2/charts/intraday",
+                        headers=headers,
+                        json=payload,
+                        timeout=30,
+                    )
+                    data = resp.json()
+                    df_batch = _parse_dhan_response({"data": data} if "open" in data else data)
+                    if df_batch is not None and not df_batch.empty:
+                        all_dfs.append(df_batch)
+                        logger.debug(f"  Batch {batch_from}→{batch_to}: {len(df_batch)} candles")
+                except Exception as e:
+                    logger.warning(f"Dhan batch {batch_from}→{batch_to} failed: {e}")
+
+                cursor = batch_end + timedelta(days=1)
+                time.sleep(0.25)  # Respect 5 req/s limit
+
+            if not all_dfs:
+                return None
+
+            combined = pd.concat(all_dfs)
+            combined = combined[~combined.index.duplicated(keep="last")].sort_index()
+            return _clean_ohlcv(combined)
+
+    except Exception as e:
+        logger.warning(f"Dhan fetch failed for {security_id}: {e}")
+        return None
+
+
+def _parse_dhan_response(resp) -> Optional[pd.DataFrame]:
+    """Parse Dhan API response dict into a clean OHLCV DataFrame."""
+    if not resp:
+        return None
+    # Direct API response has open/high/low/close at top level
+    data = resp.get("data", resp)
+    if not isinstance(data, dict):
+        return None
+    if not data.get("open"):
+        return None
+    try:
         timestamps = pd.to_datetime(data["timestamp"], unit="s", utc=True).tz_convert("Asia/Kolkata")
         df = pd.DataFrame({
             "open":   data["open"],
@@ -137,9 +197,8 @@ def fetch_dhan(
         }, index=timestamps)
         df.index.name = "datetime"
         return _clean_ohlcv(df)
-
     except Exception as e:
-        logger.warning(f"Dhan fetch failed for {security_id}: {e}")
+        logger.warning(f"Dhan parse failed: {e}")
         return None
 
 
