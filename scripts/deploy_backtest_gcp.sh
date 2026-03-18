@@ -169,8 +169,6 @@ gcloud compute instances create "$VM_NAME" \
     --project="$PROJECT_ID" \
     --zone="$ZONE" \
     --machine-type="$MACHINE_TYPE" \
-    --provisioning-model=SPOT \
-    --instance-termination-action=DELETE \
     --image-family=debian-12 \
     --image-project=debian-cloud \
     --boot-disk-size=20GB \
