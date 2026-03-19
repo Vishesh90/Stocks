@@ -23,7 +23,10 @@ from dataclasses import dataclass
 from typing import Optional
 import pandas as pd
 import numpy as np
-import pandas_ta as ta
+try:
+    import pandas_ta as ta
+except ImportError:
+    import ta as _ta_lib  # fallback to 'ta' library — used only for basic indicators in scorer
 from loguru import logger
 from datetime import date, timedelta
 

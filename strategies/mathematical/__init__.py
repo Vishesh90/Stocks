@@ -208,7 +208,18 @@ class VolatilityRegimeSwitching(BaseStrategy):
         df["atr"] = self._atr(df, self.atr_period)
         df["atr_pct"] = df["atr"].rolling(self.regime_window).rank(pct=True)
 
-        import pandas_ta as ta
+        import pandas as _pd; import numpy as _np
+        class ta:
+            @staticmethod
+            def ema(s, length=10): return s.ewm(span=length, adjust=False).mean()
+            @staticmethod
+            def rsi(s, length=14):
+                d=s.diff(); g=d.clip(lower=0).rolling(length).mean(); l=(-d.clip(upper=0)).rolling(length).mean()
+                return 100-(100/(1+g/l.replace(0,_np.nan)))
+            @staticmethod
+            def atr(h,l,c,length=14):
+                tr=_pd.concat([h-l,(h-c.shift()).abs(),(l-c.shift()).abs()],axis=1).max(axis=1)
+                return tr.ewm(span=length,adjust=False).mean()
         df["ema_fast"] = ta.ema(df["close"], length=9)
         df["ema_slow"] = ta.ema(df["close"], length=21)
         df["rsi"]      = ta.rsi(df["close"], length=14)
@@ -312,7 +323,18 @@ class HurstExponentClassifier(BaseStrategy):
     def generate_signals(self, df: pd.DataFrame, symbol: str) -> list[Signal]:
         df = df.copy()
         df["atr"] = self._atr(df)
-        import pandas_ta as ta
+        import pandas as _pd; import numpy as _np
+        class ta:
+            @staticmethod
+            def ema(s, length=10): return s.ewm(span=length, adjust=False).mean()
+            @staticmethod
+            def rsi(s, length=14):
+                d=s.diff(); g=d.clip(lower=0).rolling(length).mean(); l=(-d.clip(upper=0)).rolling(length).mean()
+                return 100-(100/(1+g/l.replace(0,_np.nan)))
+            @staticmethod
+            def atr(h,l,c,length=14):
+                tr=_pd.concat([h-l,(h-c.shift()).abs(),(l-c.shift()).abs()],axis=1).max(axis=1)
+                return tr.ewm(span=length,adjust=False).mean()
         df["rsi"]      = ta.rsi(df["close"], length=14)
         df["ema_fast"] = ta.ema(df["close"], length=9)
         df["ema_slow"] = ta.ema(df["close"], length=21)
@@ -514,7 +536,18 @@ class AdaptiveRSI(BaseStrategy):
         return best_lag
 
     def generate_signals(self, df: pd.DataFrame, symbol: str) -> list[Signal]:
-        import pandas_ta as ta
+        import pandas as _pd; import numpy as _np
+        class ta:
+            @staticmethod
+            def ema(s, length=10): return s.ewm(span=length, adjust=False).mean()
+            @staticmethod
+            def rsi(s, length=14):
+                d=s.diff(); g=d.clip(lower=0).rolling(length).mean(); l=(-d.clip(upper=0)).rolling(length).mean()
+                return 100-(100/(1+g/l.replace(0,_np.nan)))
+            @staticmethod
+            def atr(h,l,c,length=14):
+                tr=_pd.concat([h-l,(h-c.shift()).abs(),(l-c.shift()).abs()],axis=1).max(axis=1)
+                return tr.ewm(span=length,adjust=False).mean()
         df = df.copy()
         df["atr"] = self._atr(df)
         signals = []
@@ -652,7 +685,18 @@ class AutocorrelationMomentum(BaseStrategy):
         self.lag = lag
 
     def generate_signals(self, df: pd.DataFrame, symbol: str) -> list[Signal]:
-        import pandas_ta as ta
+        import pandas as _pd; import numpy as _np
+        class ta:
+            @staticmethod
+            def ema(s, length=10): return s.ewm(span=length, adjust=False).mean()
+            @staticmethod
+            def rsi(s, length=14):
+                d=s.diff(); g=d.clip(lower=0).rolling(length).mean(); l=(-d.clip(upper=0)).rolling(length).mean()
+                return 100-(100/(1+g/l.replace(0,_np.nan)))
+            @staticmethod
+            def atr(h,l,c,length=14):
+                tr=_pd.concat([h-l,(h-c.shift()).abs(),(l-c.shift()).abs()],axis=1).max(axis=1)
+                return tr.ewm(span=length,adjust=False).mean()
         df = df.copy()
         df["ret"]  = df["close"].pct_change()
         df["atr"]  = self._atr(df)
@@ -913,7 +957,18 @@ class RegimeConditionedStochastic(BaseStrategy):
     """
 
     def generate_signals(self, df: pd.DataFrame, symbol: str) -> list[Signal]:
-        import pandas_ta as ta
+        import pandas as _pd; import numpy as _np
+        class ta:
+            @staticmethod
+            def ema(s, length=10): return s.ewm(span=length, adjust=False).mean()
+            @staticmethod
+            def rsi(s, length=14):
+                d=s.diff(); g=d.clip(lower=0).rolling(length).mean(); l=(-d.clip(upper=0)).rolling(length).mean()
+                return 100-(100/(1+g/l.replace(0,_np.nan)))
+            @staticmethod
+            def atr(h,l,c,length=14):
+                tr=_pd.concat([h-l,(h-c.shift()).abs(),(l-c.shift()).abs()],axis=1).max(axis=1)
+                return tr.ewm(span=length,adjust=False).mean()
         df = df.copy()
         stoch = ta.stoch(df["high"], df["low"], df["close"], k=14, d=3, smooth_k=3)
         adx_df = ta.adx(df["high"], df["low"], df["close"], length=14)
@@ -1042,7 +1097,18 @@ class MultiTimeframeConvergence(BaseStrategy):
 
     def _trend_direction(self, df: pd.DataFrame) -> pd.Series:
         """Returns +1 (bull), -1 (bear), 0 (neutral) for each bar."""
-        import pandas_ta as ta
+        import pandas as _pd; import numpy as _np
+        class ta:
+            @staticmethod
+            def ema(s, length=10): return s.ewm(span=length, adjust=False).mean()
+            @staticmethod
+            def rsi(s, length=14):
+                d=s.diff(); g=d.clip(lower=0).rolling(length).mean(); l=(-d.clip(upper=0)).rolling(length).mean()
+                return 100-(100/(1+g/l.replace(0,_np.nan)))
+            @staticmethod
+            def atr(h,l,c,length=14):
+                tr=_pd.concat([h-l,(h-c.shift()).abs(),(l-c.shift()).abs()],axis=1).max(axis=1)
+                return tr.ewm(span=length,adjust=False).mean()
         ema_f = ta.ema(df["close"], length=self.ema_fast)
         ema_s = ta.ema(df["close"], length=self.ema_slow)
         direction = np.where(ema_f > ema_s, 1, np.where(ema_f < ema_s, -1, 0))
