@@ -155,11 +155,17 @@ def fetch_dhan(
                         json=payload,
                         timeout=30,
                     )
+                    # Log HTTP status + raw response on first batch of first instrument
+                    # so we can see exactly what Dhan is returning
+                    if cursor == start:
+                        logger.info(f"Dhan HTTP {resp.status_code} | payload={payload} | response={resp.text[:500]}")
                     data = resp.json()
                     df_batch = _parse_dhan_response({"data": data} if "open" in data else data)
                     if df_batch is not None and not df_batch.empty:
                         all_dfs.append(df_batch)
                         logger.debug(f"  Batch {batch_from}→{batch_to}: {len(df_batch)} candles")
+                    else:
+                        logger.warning(f"  Batch {batch_from}→{batch_to}: empty — raw={resp.text[:300]}")
                 except Exception as e:
                     logger.warning(f"Dhan batch {batch_from}→{batch_to} failed: {e}")
 
