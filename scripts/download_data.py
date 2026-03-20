@@ -18,9 +18,9 @@ DATA SOURCE:
 
 RATE LIMIT:
     Dhan API limit: 10 req/s.
-    We sleep 0.2s between each batch call = 5 req/s = 50% of limit.
+    We sleep 0.125s between each batch call = 8 req/s = 80% of limit.
     Each instrument = ~22 batches (5yr ÷ 85-day windows).
-    536 instruments × 22 batches × 0.2s = ~39 minutes total.
+    536 instruments × 22 batches × 0.125s = ~25 minutes total.
 
 STORAGE:
     1m data: ~250MB per instrument × 536 = ~134GB total on disk.
@@ -96,7 +96,7 @@ def main():
 
     # ── HEADER ────────────────────────────────────────────────────────────────
     console.rule("[bold cyan]Columnly Stocks — Data Downloader[/bold cyan]")
-    console.print(f"[yellow]Interval: {args.interval} | Dhan rate limit: 0.35s/batch | Years: {args.years}[/yellow]")
+    console.print(f"[yellow]Interval: {args.interval} | Rate: 8 req/s (80% of Dhan limit) | Years: {args.years}[/yellow]")
     console.print(f"[green]Output directory: {cache_root.resolve()}[/green]")
 
     # Progress file lives inside the output folder
@@ -137,7 +137,7 @@ def main():
 
     # ── TIME / STORAGE ESTIMATE ───────────────────────────────────────────────
     batches_per_instrument = max(1, int(args.years * 365 / 85) + 1)
-    BATCH_DELAY_S = 0.2  # 0.2s per batch = 5 req/s = 50% of Dhan's 10 req/s limit
+    BATCH_DELAY_S = 0.125  # 0.125s per batch = 8 req/s = 80% of Dhan's 10 req/s limit
     est_seconds = len(remaining) * batches_per_instrument * BATCH_DELAY_S
     mb_per_instrument = 250 if args.interval == "1m" else 50
     console.print(f"[dim]Estimated time  : {est_seconds / 3600:.1f} hours ({est_seconds / 60:.0f} minutes)[/dim]")

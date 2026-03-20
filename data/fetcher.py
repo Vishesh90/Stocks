@@ -16,8 +16,8 @@ FUNCTIONS:
     - fetch_universe_data(): Bulk download for full universe
 
 RATE LIMIT:
-    Dhan API allows 10 req/s. We sleep 0.2s between batch calls = 5 req/s.
-    That is 50% of the limit — never touches the ceiling even under jitter.
+    Dhan API allows 10 req/s. We sleep 0.125s between batch calls = 8 req/s.
+    That is 80% of the limit — never crosses 8 req/s.
 
 DEPENDENCIES:
     - config/settings.py
@@ -164,9 +164,10 @@ def fetch_dhan(
                     logger.warning(f"Dhan batch {batch_from}→{batch_to} failed: {e}")
 
                 cursor = batch_end + timedelta(days=1)
-                # Dhan API limit: 10 req/s. We sleep 0.2s = 5 req/s = 50% of limit.
-                # Never touches the limit even under network jitter.
-                time.sleep(0.2)
+                # Dhan API limit: 10 req/s.
+                # 0.125s between calls = exactly 8 req/s = 80% of limit.
+                # Mathematically cannot exceed 8 req/s.
+                time.sleep(0.125)
 
             if not all_dfs:
                 return None
