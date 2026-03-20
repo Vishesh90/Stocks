@@ -16,13 +16,13 @@ USAGE:
     python scripts/download_data.py --delay 0.5        # Slower = safer rate limit
 
 STORAGE ESTIMATE:
-    5m data: ~50MB per instrument × 1000 instruments = ~50GB total
-    1m data: ~250MB per instrument × 1000 instruments = ~250GB total
+    5m data: ~50MB per instrument × 536 instruments = ~26GB total
+    1m data: ~250MB per instrument × 536 instruments = ~134GB total
 
 RATE LIMIT:
-    Dhan allows 5 req/sec. We use 0.3s delay = ~3 req/sec (safe).
+    Dhan allows 5 req/sec. We use 0.35s delay = ~2.8 req/sec (safe).
     Each instrument needs ~22 batches (5yr / 85 days).
-    1000 instruments × 22 batches × 0.3s = ~1.8 hours total.
+    536 instruments × 22 batches × 0.35s = ~1.1 hours total.
 """
 
 import sys
@@ -43,25 +43,9 @@ from data.universe import (
     NIFTY50_STOCKS, NIFTY_NEXT50_STOCKS,
     get_equity_universe, get_index_universe, get_commodity_universe
 )
-from data.fetcher import fetch_ohlcv, _cache_path
+from data.fetcher import fetch_ohlcv
 
 console = Console()
-
-PROGRESS_FILE = Path("data/cache/download_progress.json")
-
-
-def load_progress() -> set:
-    """Load set of already-downloaded symbols."""
-    if PROGRESS_FILE.exists():
-        data = json.loads(PROGRESS_FILE.read_text())
-        return set(data.get("completed", []))
-    return set()
-
-
-def save_progress(completed: set):
-    """Save progress so we can resume after interruption."""
-    PROGRESS_FILE.parent.mkdir(parents=True, exist_ok=True)
-    PROGRESS_FILE.write_text(json.dumps({"completed": list(completed)}))
 
 
 def download_instrument(instrument, interval: str, years: int = 5) -> bool:
@@ -87,50 +71,35 @@ def download_instrument(instrument, interval: str, years: int = 5) -> bool:
 
 def main():
     parser = argparse.ArgumentParser(description="Bulk data downloader for backtesting")
-    parser.add_argument("--interval", default="1m",       help="Data interval: 1m, 5m, 15m (default: 1m)")
-    parser.add_argument("--output",   default=None,        help="Custom folder to store data e.g. D:/StocksData or /mnt/d/StocksData")
-    parser.add_argument("--delay",    type=float, default=0.35, help="Delay between requests in seconds (default: 0.35)")
-    parser.add_argument("--resume",   action="store_true", help="Skip already-downloaded instruments")
-    parser.add_argument("--nifty50",  action="store_true", help="Nifty 50 only (50 instruments)")
-    parser.add_argument("--nifty100", action="store_true", help="Nifty 50 + Next 50 (100 instruments)")
-    parser.add_argument("--years",    type=int, default=5, help="Years of history (default: 5)")
+    parser.add_argument("--interval", default="1m",            help="Data interval: 1m, 5m, 15m (default: 1m)")
+    parser.add_argument("--output",   default=None,            help='Custom folder e.g. "F:\\Stocks\\1m Nifty 500 stock data"')
+    parser.add_argument("--delay",    type=float, default=0.35, help="Delay between instruments in seconds (default: 0.35)")
+    parser.add_argument("--resume",   action="store_true",     help="Skip already-downloaded instruments")
+    parser.add_argument("--nifty50",  action="store_true",     help="Nifty 50 only (50 instruments, quick test)")
+    parser.add_argument("--nifty100", action="store_true",     help="Nifty 50 + Next 50 (100 instruments)")
+    parser.add_argument("--years",    type=int, default=5,     help="Years of history to download (default: 5)")
     args = parser.parse_args()
 
     # ── SET CUSTOM OUTPUT DIR ─────────────────────────────────────────────────
+    # Must happen BEFORE any import of fetcher internals so the patched
+    # settings.data_cache_dir is picked up by _cache_path().
+    cache_root = Path(args.output) if args.output else Path("data/cache")
+    cache_root.mkdir(parents=True, exist_ok=True)
+
     if args.output:
         import os
-        custom_dir = Path(args.output)
-        custom_dir.mkdir(parents=True, exist_ok=True)
-        os.environ["DATA_CACHE_DIR"] = str(custom_dir)
-        # Reload settings with new path
-        from config import settings as _settings_module
-        from config.settings import Settings
-        import config.settings as _cfg
-        _cfg.settings = Settings()
+        os.environ["DATA_CACHE_DIR"] = str(cache_root)
+        # Patch the already-instantiated settings singleton directly.
+        # object.__setattr__ bypasses Pydantic's frozen-field guard.
         from config.settings import settings
-        console.print(f"[green]Output directory: {custom_dir.resolve()}[/green]")
-    else:
-        from config.settings import settings
-        console.print(f"[green]Output directory: {Path('data/cache').resolve()}[/green]")
+        object.__setattr__(settings, "data_cache_dir", cache_root)
 
-    console.rule(f"[bold cyan]Columnly Stocks — Data Downloader[/bold cyan]")
+    # ── HEADER ────────────────────────────────────────────────────────────────
+    console.rule("[bold cyan]Columnly Stocks — Data Downloader[/bold cyan]")
     console.print(f"[yellow]Interval: {args.interval} | Delay: {args.delay}s | Years: {args.years}[/yellow]")
-
-    # ── SET CUSTOM OUTPUT DIR ─────────────────────────────────────────────────
-    if args.output:
-        import os
-        custom_dir = Path(args.output)
-        custom_dir.mkdir(parents=True, exist_ok=True)
-        os.environ["DATA_CACHE_DIR"] = str(custom_dir)
-        # Patch the settings object directly so fetcher uses the right path
-        from config.settings import settings
-        object.__setattr__(settings, 'data_cache_dir', custom_dir)
-        console.print(f"[green]Output directory: {custom_dir.resolve()}[/green]")
-    else:
-        console.print(f"[green]Output directory: {Path('data/cache').resolve()}[/green]")
+    console.print(f"[green]Output directory: {cache_root.resolve()}[/green]")
 
     # Progress file lives inside the output folder
-    cache_root = Path(args.output) if args.output else Path("data/cache")
     progress_file = cache_root / "download_progress.json"
 
     # ── SELECT UNIVERSE ───────────────────────────────────────────────────────
@@ -149,27 +118,35 @@ def main():
         console.print(f"[green]Mode: Full universe ({len(instruments)} instruments)[/green]")
 
     # ── RESUME LOGIC ──────────────────────────────────────────────────────────
-    completed = set()
+    completed: set = set()
     if args.resume and progress_file.exists():
-        data = json.loads(progress_file.read_text())
-        completed = set(data.get("completed", []))
-        console.print(f"[cyan]Resuming: {len(completed)} already downloaded, skipping them[/cyan]")
+        try:
+            data = json.loads(progress_file.read_text())
+            completed = set(data.get("completed", []))
+            console.print(f"[cyan]Resuming: {len(completed)} already downloaded, skipping them[/cyan]")
+        except Exception:
+            console.print("[yellow]Could not read progress file — starting fresh[/yellow]")
 
     remaining = [i for i in instruments if i.symbol not in completed]
     console.print(f"[cyan]{len(remaining)} instruments to download[/cyan]\n")
 
-    # ── ESTIMATE ──────────────────────────────────────────────────────────────
-    batches_per_instrument = 22 if args.years == 5 else int(args.years * 365 / 85) + 1
-    est_seconds = len(remaining) * batches_per_instrument * args.delay
-    est_hours   = est_seconds / 3600
-    console.print(f"[dim]Estimated time: {est_hours:.1f} hours ({est_seconds/60:.0f} minutes)[/dim]")
-    console.print(f"[dim]Storage estimate: ~{len(remaining) * 50}MB for 5m data[/dim]\n")
+    if not remaining:
+        console.print("[bold green]Nothing to download — all instruments already cached.[/bold green]")
+        return
 
-    # ── DOWNLOAD ──────────────────────────────────────────────────────────────
-    success_count = 0
-    fail_count    = 0
+    # ── TIME / STORAGE ESTIMATE ───────────────────────────────────────────────
+    batches_per_instrument = max(1, int(args.years * 365 / 85) + 1)
+    est_seconds = len(remaining) * batches_per_instrument * args.delay
+    mb_per_instrument = 250 if args.interval == "1m" else 50
+    console.print(f"[dim]Estimated time  : {est_seconds / 3600:.1f} hours ({est_seconds / 60:.0f} minutes)[/dim]")
+    console.print(f"[dim]Storage estimate: ~{len(remaining) * mb_per_instrument // 1024}GB "
+                  f"({len(remaining) * mb_per_instrument}MB)[/dim]\n")
+
+    # ── DOWNLOAD LOOP ─────────────────────────────────────────────────────────
+    success_count  = 0
+    fail_count     = 0
     failed_symbols = []
-    start_time    = time.time()
+    start_time     = time.time()
 
     with Progress(
         SpinnerColumn(),
@@ -182,9 +159,9 @@ def main():
     ) as progress:
         task = progress.add_task("Downloading...", total=len(remaining))
 
-        for i, instrument in enumerate(remaining):
+        for idx, instrument in enumerate(remaining):
             symbol = instrument.symbol
-            progress.update(task, description=f"[cyan]{symbol}[/cyan] ({i+1}/{len(remaining)})")
+            progress.update(task, description=f"[cyan]{symbol}[/cyan] ({idx + 1}/{len(remaining)})")
 
             ok = download_instrument(instrument, interval=args.interval, years=args.years)
 
@@ -195,13 +172,11 @@ def main():
                 fail_count += 1
                 failed_symbols.append(symbol)
 
-            # Save progress after every instrument — crash-safe
-            completed.add(symbol) if ok else None
-            progress_file.parent.mkdir(parents=True, exist_ok=True)
+            # Persist progress after every instrument — crash-safe resume
             progress_file.write_text(json.dumps({"completed": list(completed)}))
             progress.advance(task)
 
-            # Rate limit protection
+            # Rate-limit: pause between instruments (Dhan 5 req/s limit)
             time.sleep(args.delay)
 
     # ── SUMMARY ───────────────────────────────────────────────────────────────
@@ -212,24 +187,25 @@ def main():
     table = Table(show_header=True)
     table.add_column("Metric",  style="cyan")
     table.add_column("Value",   style="green")
-    table.add_row("Total instruments",  str(len(remaining)))
+    table.add_row("Total instruments",       str(len(remaining)))
     table.add_row("Successfully downloaded", str(success_count))
-    table.add_row("Failed",     str(fail_count))
-    table.add_row("Time taken", f"{elapsed/60:.1f} minutes")
-    table.add_row("Cache location", str(Path("data/cache") / args.interval))
+    table.add_row("Failed",                  str(fail_count))
+    table.add_row("Time taken",              f"{elapsed / 60:.1f} minutes")
+    table.add_row("Cache location",          str((cache_root / args.interval).resolve()))
     console.print(table)
 
     if failed_symbols:
         console.print(f"\n[yellow]Failed instruments ({len(failed_symbols)}):[/yellow]")
         console.print(", ".join(failed_symbols))
-        console.print(f"\n[dim]Re-run with --resume to retry failed instruments[/dim]")
+        console.print("\n[dim]Re-run with --resume to retry failed instruments[/dim]")
 
     if success_count > 0:
         console.print(f"\n[bold green]Data ready. Run backtests with:[/bold green]")
         console.print(f"  python scripts/run_backtest.py --interval {args.interval}")
-        # Clean up progress file on full success
-        if fail_count == 0:
-            progress_file.unlink(missing_ok=True)
+
+    # Clean up progress file only when everything succeeded
+    if fail_count == 0 and success_count > 0:
+        progress_file.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":

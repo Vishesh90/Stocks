@@ -400,10 +400,10 @@ def _clean_ohlcv(df: pd.DataFrame) -> pd.DataFrame:
     # Sort ascending
     df = df.sort_index()
 
-    # Cast types
+    # Cast types — volume comes back as float from Dhan; cast safely
     for col in ["open", "high", "low", "close"]:
-        df[col] = df[col].astype(np.float64)
-    df["volume"] = df["volume"].astype(np.int64)
+        df[col] = pd.to_numeric(df[col], errors="coerce").astype(np.float64)
+    df["volume"] = pd.to_numeric(df["volume"], errors="coerce").fillna(0).astype(np.int64)
 
     return df
 
