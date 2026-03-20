@@ -73,7 +73,6 @@ def main():
     parser = argparse.ArgumentParser(description="Bulk data downloader for backtesting")
     parser.add_argument("--interval", default="1m",            help="Data interval: 1m, 5m, 15m (default: 1m)")
     parser.add_argument("--output",   default=None,            help='Custom folder e.g. "F:\\Stocks\\1m Nifty 500 stock data"')
-    parser.add_argument("--delay",    type=float, default=0.35, help="Delay between instruments in seconds (default: 0.35)")
     parser.add_argument("--resume",   action="store_true",     help="Skip already-downloaded instruments")
     parser.add_argument("--nifty50",  action="store_true",     help="Nifty 50 only (50 instruments, quick test)")
     parser.add_argument("--nifty100", action="store_true",     help="Nifty 50 + Next 50 (100 instruments)")
@@ -96,7 +95,7 @@ def main():
 
     # ── HEADER ────────────────────────────────────────────────────────────────
     console.rule("[bold cyan]Columnly Stocks — Data Downloader[/bold cyan]")
-    console.print(f"[yellow]Interval: {args.interval} | Delay: {args.delay}s | Years: {args.years}[/yellow]")
+    console.print(f"[yellow]Interval: {args.interval} | Dhan rate limit: 0.35s/batch | Years: {args.years}[/yellow]")
     console.print(f"[green]Output directory: {cache_root.resolve()}[/green]")
 
     # Progress file lives inside the output folder
@@ -136,7 +135,8 @@ def main():
 
     # ── TIME / STORAGE ESTIMATE ───────────────────────────────────────────────
     batches_per_instrument = max(1, int(args.years * 365 / 85) + 1)
-    est_seconds = len(remaining) * batches_per_instrument * args.delay
+    BATCH_DELAY = 0.35  # seconds between each Dhan API batch call
+    est_seconds = len(remaining) * batches_per_instrument * BATCH_DELAY
     mb_per_instrument = 250 if args.interval == "1m" else 50
     console.print(f"[dim]Estimated time  : {est_seconds / 3600:.1f} hours ({est_seconds / 60:.0f} minutes)[/dim]")
     console.print(f"[dim]Storage estimate: ~{len(remaining) * mb_per_instrument // 1024}GB "
@@ -175,9 +175,6 @@ def main():
             # Persist progress after every instrument — crash-safe resume
             progress_file.write_text(json.dumps({"completed": list(completed)}))
             progress.advance(task)
-
-            # Rate-limit: pause between instruments (Dhan 5 req/s limit)
-            time.sleep(args.delay)
 
     # ── SUMMARY ───────────────────────────────────────────────────────────────
     elapsed = time.time() - start_time

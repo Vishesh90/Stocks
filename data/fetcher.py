@@ -162,7 +162,7 @@ def fetch_dhan(
                     logger.warning(f"Dhan batch {batch_from}→{batch_to} failed: {e}")
 
                 cursor = batch_end + timedelta(days=1)
-                time.sleep(0.25)  # Respect 5 req/s limit
+                time.sleep(0.35)  # Dhan rate limit: max 5 req/s, 0.35s = ~2.8 req/s (safe)
 
             if not all_dfs:
                 return None
@@ -273,21 +273,13 @@ def fetch_ohlcv(
     use_cache: bool = True,
 ) -> Optional[pd.DataFrame]:
     """
-    Primary OHLCV fetch function. Tries Dhan first, falls back to yfinance.
+    Primary OHLCV fetch function. Dhan API only — no Yahoo fallback.
 
-    WHY: Single interface for all data access means strategies never need to
-    know where data came from. Adding a new source only changes this function.
+    WHY: We use Dhan specifically because it provides 5 years of 1m intraday
+    data for Indian markets. Yahoo Finance caps 1m data at 8 days — useless
+    for backtesting. Every instrument in the universe has a dhan_security_id.
 
-    Args:
-        instrument: Instrument definition from universe.py
-        interval: '1m', '5m', '15m', '25m', '60m', '1d'
-        from_date: 'YYYY-MM-DD' (defaults to 5 years ago for daily, 90 days for intraday)
-        to_date: 'YYYY-MM-DD' (defaults to today)
-        use_cache: Skip API call if local cache exists
-
-    Returns:
-        DataFrame with columns [open, high, low, close, volume] indexed by datetime.
-        Returns None if data is unavailable from all sources.
+    Returns None (and logs a warning) if Dhan returns no data for that instrument.
     """
     today = date.today().isoformat()
 
@@ -295,7 +287,6 @@ def fetch_ohlcv(
         to_date = today
 
     if from_date is None:
-        # Intraday: max 5 years (Dhan limit); daily: inception
         if interval == "1d":
             from_date = (date.today() - timedelta(days=365 * 10)).isoformat()
         else:
@@ -310,32 +301,28 @@ def fetch_ohlcv(
 
     logger.info(f"Fetching {instrument.symbol} ({interval}) {from_date} → {to_date}")
 
-    df = None
+    # Dhan only. No Yahoo fallback — Yahoo caps 1m at 8 days, worthless.
+    if not settings.dhan_access_token:
+        logger.error("DHAN_ACCESS_TOKEN not set in .env — cannot fetch data")
+        return None
 
-    # Attempt 1: Dhan API (if credentials available and security_id known)
-    if settings.dhan_access_token and instrument.dhan_security_id:
-        exchange_segment = _dhan_exchange_segment(instrument)
-        instrument_type = _dhan_instrument_type(instrument)
-        df = fetch_dhan(
-            security_id=instrument.dhan_security_id,
-            exchange_segment=exchange_segment,
-            instrument_type=instrument_type,
-            interval=interval,
-            from_date=from_date,
-            to_date=to_date,
-        )
+    if not instrument.dhan_security_id:
+        logger.warning(f"{instrument.symbol}: no dhan_security_id — skipping")
+        return None
 
-    # Attempt 2: Yahoo Finance fallback
-    if df is None and instrument.yfinance_ticker:
-        df = fetch_yfinance(
-            ticker=instrument.yfinance_ticker,
-            interval=interval,
-            from_date=from_date,
-            to_date=to_date,
-        )
+    exchange_segment = _dhan_exchange_segment(instrument)
+    instrument_type  = _dhan_instrument_type(instrument)
+    df = fetch_dhan(
+        security_id=instrument.dhan_security_id,
+        exchange_segment=exchange_segment,
+        instrument_type=instrument_type,
+        interval=interval,
+        from_date=from_date,
+        to_date=to_date,
+    )
 
     if df is None or df.empty:
-        logger.warning(f"No data available for {instrument.symbol}")
+        logger.warning(f"No data returned from Dhan for {instrument.symbol}")
         return None
 
     _save_cache(df, cache_path)
