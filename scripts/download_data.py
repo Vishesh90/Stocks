@@ -122,15 +122,11 @@ def main():
         custom_dir = Path(args.output)
         custom_dir.mkdir(parents=True, exist_ok=True)
         os.environ["DATA_CACHE_DIR"] = str(custom_dir)
-        # Reload settings with new path
-        from config import settings as _settings_module
-        from config.settings import Settings
-        import config.settings as _cfg
-        _cfg.settings = Settings()
+        # Patch the settings object directly so fetcher uses the right path
         from config.settings import settings
+        object.__setattr__(settings, 'data_cache_dir', custom_dir)
         console.print(f"[green]Output directory: {custom_dir.resolve()}[/green]")
     else:
-        from config.settings import settings
         console.print(f"[green]Output directory: {Path('data/cache').resolve()}[/green]")
 
     # Progress file lives inside the output folder
