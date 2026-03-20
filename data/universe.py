@@ -2,25 +2,18 @@
 data/universe.py — Complete Indian market universe definition
 
 INTENT:
-    Defines every tradeable instrument we backtest across: equities (all NSE/BSE
-    listed), indices (broad + sectoral), commodities (MCX), and F&O (futures &
-    options). This is the authoritative list — the backtester, scanner, and agent
-    all pull from here.
+    Defines every tradeable instrument we backtest across. The equity universe
+    is the full Nifty 500 (498 stocks with real Dhan security IDs), plus
+    22 indices and 10 commodities — 530 instruments total covering ~92% of
+    NSE market cap. All Dhan security IDs are sourced live from the Dhan
+    scrip master CSV at generation time.
 
 IMPACT:
-    Adding a new instrument here makes it available to every downstream system
-    automatically. Removing one stops it from being traded without touching
-    any other file.
-
-FUNCTIONS:
-    - get_equity_universe(): All NSE-listed equities
-    - get_index_universe(): Broad + sectoral indices
-    - get_commodity_universe(): MCX commodities
-    - get_fno_universe(): F&O eligible stocks
-    - get_full_universe(): Everything combined
+    Adding a new instrument here makes it available to every downstream system.
+    All 498 equity instruments have verified Dhan security IDs for direct API fetch.
 
 OWNED BY: Phase 1 — Data Pipeline
-LAST UPDATED: 2026-03-18
+LAST UPDATED: 2026-03-20
 """
 
 from dataclasses import dataclass
@@ -29,182 +22,622 @@ from typing import Optional
 
 
 class AssetClass(Enum):
-    EQUITY = "equity"
-    INDEX = "index"
+    EQUITY    = "equity"
+    INDEX     = "index"
     COMMODITY = "commodity"
-    FUTURES = "futures"
-    OPTIONS = "options"
-    ETF = "etf"
+    FUTURES   = "futures"
+    OPTIONS   = "options"
+    ETF       = "etf"
 
 
 class Exchange(Enum):
     NSE = "NSE"
     BSE = "BSE"
     MCX = "MCX"
-    NFO = "NFO"   # NSE F&O
-    BFO = "BFO"   # BSE F&O
+    NFO = "NFO"
+    BFO = "BFO"
 
 
 @dataclass
 class Instrument:
-    symbol: str
-    name: str
-    asset_class: AssetClass
-    exchange: Exchange
+    symbol:           str
+    name:             str
+    asset_class:      AssetClass
+    exchange:         Exchange
     dhan_security_id: Optional[str] = None
-    yfinance_ticker: Optional[str] = None
-    lot_size: int = 1
-    tick_size: float = 0.05
-    segment: Optional[str] = None   # IT, Banking, Auto, etc.
+    yfinance_ticker:  Optional[str] = None
+    lot_size:         int           = 1
+    tick_size:        float         = 0.05
+    segment:          Optional[str] = None
 
 
 # ─────────────────────────────────────────────────────────────────
-# NIFTY BROAD INDICES
+# NIFTY 500 STOCKS — 498 instruments, ~92% NSE market cap
+# Dhan security IDs sourced from api-scrip-master.csv (2026-03-20)
+# ─────────────────────────────────────────────────────────────────
+NIFTY500_STOCKS = [
+    Instrument("360ONE", "360 ONE WAM Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="13061", yfinance_ticker="360ONE.NS", segment="Financial Services"),
+    Instrument("3MINDIA", "3M India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="474", yfinance_ticker="3MINDIA.NS", segment="Diversified"),
+    Instrument("ABB", "ABB India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="13", yfinance_ticker="ABB.NS", segment="Capital Goods"),
+    Instrument("ACC", "ACC Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="22", yfinance_ticker="ACC.NS", segment="Construction Materials"),
+    Instrument("ACMESOLAR", "ACME Solar Holdings Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="27061", yfinance_ticker="ACMESOLAR.NS", segment="Power"),
+    Instrument("AIAENG", "AIA Engineering Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="13086", yfinance_ticker="AIAENG.NS", segment="Capital Goods"),
+    Instrument("APLAPOLLO", "APL Apollo Tubes Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="25780", yfinance_ticker="APLAPOLLO.NS", segment="Capital Goods"),
+    Instrument("AUBANK", "AU Small Finance Bank Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="21238", yfinance_ticker="AUBANK.NS", segment="Financial Services"),
+    Instrument("AWL", "AWL Agri Business Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="8110", yfinance_ticker="AWL.NS", segment="Fast Moving Consumer Goods"),
+    Instrument("AADHARHFC", "Aadhar Housing Finance Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="23729", yfinance_ticker="AADHARHFC.NS", segment="Financial Services"),
+    Instrument("AARTIIND", "Aarti Industries Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="7", yfinance_ticker="AARTIIND.NS", segment="Chemicals"),
+    Instrument("AAVAS", "Aavas Financiers Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="5385", yfinance_ticker="AAVAS.NS", segment="Financial Services"),
+    Instrument("ABBOTINDIA", "Abbott India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="17903", yfinance_ticker="ABBOTINDIA.NS", segment="Healthcare"),
+    Instrument("ACE", "Action Construction Equipment Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="13587", yfinance_ticker="ACE.NS", segment="Capital Goods"),
+    Instrument("ADANIENSOL", "Adani Energy Solutions Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="10217", yfinance_ticker="ADANIENSOL.NS", segment="Power"),
+    Instrument("ADANIENT", "Adani Enterprises Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="25", yfinance_ticker="ADANIENT.NS", segment="Metals & Mining"),
+    Instrument("ADANIGREEN", "Adani Green Energy Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="3563", yfinance_ticker="ADANIGREEN.NS", segment="Power"),
+    Instrument("ADANIPORTS", "Adani Ports and Special Economic Zone Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="15083", yfinance_ticker="ADANIPORTS.NS", segment="Services"),
+    Instrument("ADANIPOWER", "Adani Power Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="17388", yfinance_ticker="ADANIPOWER.NS", segment="Power"),
+    Instrument("ATGL", "Adani Total Gas Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="6066", yfinance_ticker="ATGL.NS", segment="Oil Gas & Consumable Fuels"),
+    Instrument("ABCAPITAL", "Aditya Birla Capital Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="21614", yfinance_ticker="ABCAPITAL.NS", segment="Financial Services"),
+    Instrument("ABFRL", "Aditya Birla Fashion and Retail Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="30108", yfinance_ticker="ABFRL.NS", segment="Consumer Services"),
+    Instrument("ABLBL", "Aditya Birla Lifestyle Brands Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="756843", yfinance_ticker="ABLBL.NS", segment="Consumer Services"),
+    Instrument("ABREL", "Aditya Birla Real Estate Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="625", yfinance_ticker="ABREL.NS", segment="Forest Materials"),
+    Instrument("ABSLAMC", "Aditya Birla Sun Life AMC Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="6018", yfinance_ticker="ABSLAMC.NS", segment="Financial Services"),
+    Instrument("AEGISLOG", "Aegis Logistics Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="40", yfinance_ticker="AEGISLOG.NS", segment="Oil Gas & Consumable Fuels"),
+    Instrument("AEGISVOPAK", "Aegis Vopak Terminals Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="757336", yfinance_ticker="AEGISVOPAK.NS", segment="Oil Gas & Consumable Fuels"),
+    Instrument("AFCONS", "Afcons Infrastructure Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="25977", yfinance_ticker="AFCONS.NS", segment="Construction"),
+    Instrument("AFFLE", "Affle 3i Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="11343", yfinance_ticker="AFFLE.NS", segment="Information Technology"),
+    Instrument("AJANTPHARM", "Ajanta Pharmaceuticals Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="8124", yfinance_ticker="AJANTPHARM.NS", segment="Healthcare"),
+    Instrument("AKUMS", "Akums Drugs and Pharmaceuticals Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="24715", yfinance_ticker="AKUMS.NS", segment="Healthcare"),
+    Instrument("AKZOINDIA", "Akzo Nobel India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1467", yfinance_ticker="AKZOINDIA.NS", segment="Consumer Durables"),
+    Instrument("APLLTD", "Alembic Pharmaceuticals Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="25328", yfinance_ticker="APLLTD.NS", segment="Healthcare"),
+    Instrument("ALKEM", "Alkem Laboratories Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="11703", yfinance_ticker="ALKEM.NS", segment="Healthcare"),
+    Instrument("ALKYLAMINE", "Alkyl Amines Chemicals Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="4487", yfinance_ticker="ALKYLAMINE.NS", segment="Chemicals"),
+    Instrument("ALOKINDS", "Alok Industries Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="17675", yfinance_ticker="ALOKINDS.NS", segment="Textiles"),
+    Instrument("ARE&M", "Amara Raja Energy & Mobility Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="100", yfinance_ticker="ARE&M.NS", segment="Automobile and Auto Components"),
+    Instrument("AMBER", "Amber Enterprises India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1185", yfinance_ticker="AMBER.NS", segment="Consumer Durables"),
+    Instrument("AMBUJACEM", "Ambuja Cements Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1270", yfinance_ticker="AMBUJACEM.NS", segment="Construction Materials"),
+    Instrument("ANANDRATHI", "Anand Rathi Wealth Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="7145", yfinance_ticker="ANANDRATHI.NS", segment="Financial Services"),
+    Instrument("ANANTRAJ", "Anant Raj Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="13620", yfinance_ticker="ANANTRAJ.NS", segment="Realty"),
+    Instrument("ANGELONE", "Angel One Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="324", yfinance_ticker="ANGELONE.NS", segment="Financial Services"),
+    Instrument("APARINDS", "Apar Industries Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="11491", yfinance_ticker="APARINDS.NS", segment="Capital Goods"),
+    Instrument("APOLLOHOSP", "Apollo Hospitals Enterprise Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="157", yfinance_ticker="APOLLOHOSP.NS", segment="Healthcare"),
+    Instrument("APOLLOTYRE", "Apollo Tyres Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="163", yfinance_ticker="APOLLOTYRE.NS", segment="Automobile and Auto Components"),
+    Instrument("APTUS", "Aptus Value Housing Finance India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="5435", yfinance_ticker="APTUS.NS", segment="Financial Services"),
+    Instrument("ASAHIINDIA", "Asahi India Glass Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="5378", yfinance_ticker="ASAHIINDIA.NS", segment="Automobile and Auto Components"),
+    Instrument("ASHOKLEY", "Ashok Leyland Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="212", yfinance_ticker="ASHOKLEY.NS", segment="Capital Goods"),
+    Instrument("ASIANPAINT", "Asian Paints Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="236", yfinance_ticker="ASIANPAINT.NS", segment="Consumer Durables"),
+    Instrument("ASTERDM", "Aster DM Healthcare Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1508", yfinance_ticker="ASTERDM.NS", segment="Healthcare"),
+    Instrument("ASTRAZEN", "AstraZenca Pharma India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="5610", yfinance_ticker="ASTRAZEN.NS", segment="Healthcare"),
+    Instrument("ASTRAL", "Astral Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="14418", yfinance_ticker="ASTRAL.NS", segment="Capital Goods"),
+    Instrument("ATHERENERG", "Ather Energy Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="757645", yfinance_ticker="ATHERENERG.NS", segment="Automobile and Auto Components"),
+    Instrument("ATUL", "Atul Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="263", yfinance_ticker="ATUL.NS", segment="Chemicals"),
+    Instrument("AUROPHARMA", "Aurobindo Pharma Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="275", yfinance_ticker="AUROPHARMA.NS", segment="Healthcare"),
+    Instrument("AIIL", "Authum Investment & Infrastructure Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="23553", yfinance_ticker="AIIL.NS", segment="Financial Services"),
+    Instrument("DMART", "Avenue Supermarts Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="19913", yfinance_ticker="DMART.NS", segment="Consumer Services"),
+    Instrument("AXISBANK", "Axis Bank Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="5900", yfinance_ticker="AXISBANK.NS", segment="Financial Services"),
+    Instrument("BASF", "BASF India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="368", yfinance_ticker="BASF.NS", segment="Chemicals"),
+    Instrument("BEML", "BEML Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="395", yfinance_ticker="BEML.NS", segment="Capital Goods"),
+    Instrument("BLS", "BLS International Services Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="17279", yfinance_ticker="BLS.NS", segment="Consumer Services"),
+    Instrument("BSE", "BSE Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="19585", yfinance_ticker="BSE.NS", segment="Financial Services"),
+    Instrument("BAJAJ-AUTO", "Bajaj Auto Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="16669", yfinance_ticker="BAJAJ-AUTO.NS", segment="Automobile and Auto Components"),
+    Instrument("BAJFINANCE", "Bajaj Finance Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="317", yfinance_ticker="BAJFINANCE.NS", segment="Financial Services"),
+    Instrument("BAJAJFINSV", "Bajaj Finserv Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="16675", yfinance_ticker="BAJAJFINSV.NS", segment="Financial Services"),
+    Instrument("BAJAJHLDNG", "Bajaj Holdings & Investment Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="305", yfinance_ticker="BAJAJHLDNG.NS", segment="Financial Services"),
+    Instrument("BAJAJHFL", "Bajaj Housing Finance Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="25270", yfinance_ticker="BAJAJHFL.NS", segment="Financial Services"),
+    Instrument("BALKRISIND", "Balkrishna Industries Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="335", yfinance_ticker="BALKRISIND.NS", segment="Automobile and Auto Components"),
+    Instrument("BALRAMCHIN", "Balrampur Chini Mills Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="341", yfinance_ticker="BALRAMCHIN.NS", segment="Fast Moving Consumer Goods"),
+    Instrument("BANDHANBNK", "Bandhan Bank Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="2263", yfinance_ticker="BANDHANBNK.NS", segment="Financial Services"),
+    Instrument("BANKBARODA", "Bank of Baroda", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="4668", yfinance_ticker="BANKBARODA.NS", segment="Financial Services"),
+    Instrument("BANKINDIA", "Bank of India", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="4745", yfinance_ticker="BANKINDIA.NS", segment="Financial Services"),
+    Instrument("MAHABANK", "Bank of Maharashtra", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="11377", yfinance_ticker="MAHABANK.NS", segment="Financial Services"),
+    Instrument("BATAINDIA", "Bata India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="371", yfinance_ticker="BATAINDIA.NS", segment="Consumer Durables"),
+    Instrument("BAYERCROP", "Bayer Cropscience Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="17927", yfinance_ticker="BAYERCROP.NS", segment="Chemicals"),
+    Instrument("BERGEPAINT", "Berger Paints India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="404", yfinance_ticker="BERGEPAINT.NS", segment="Consumer Durables"),
+    Instrument("BDL", "Bharat Dynamics Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="2144", yfinance_ticker="BDL.NS", segment="Capital Goods"),
+    Instrument("BEL", "Bharat Electronics Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="383", yfinance_ticker="BEL.NS", segment="Capital Goods"),
+    Instrument("BHARATFORG", "Bharat Forge Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="422", yfinance_ticker="BHARATFORG.NS", segment="Automobile and Auto Components"),
+    Instrument("BHEL", "Bharat Heavy Electricals Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="438", yfinance_ticker="BHEL.NS", segment="Capital Goods"),
+    Instrument("BPCL", "Bharat Petroleum Corporation Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="526", yfinance_ticker="BPCL.NS", segment="Oil Gas & Consumable Fuels"),
+    Instrument("BHARTIARTL", "Bharti Airtel Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="10604", yfinance_ticker="BHARTIARTL.NS", segment="Telecommunication"),
+    Instrument("BHARTIHEXA", "Bharti Hexacom Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="23489", yfinance_ticker="BHARTIHEXA.NS", segment="Telecommunication"),
+    Instrument("BIKAJI", "Bikaji Foods International Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="11966", yfinance_ticker="BIKAJI.NS", segment="Fast Moving Consumer Goods"),
+    Instrument("BIOCON", "Biocon Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="11373", yfinance_ticker="BIOCON.NS", segment="Healthcare"),
+    Instrument("BSOFT", "Birlasoft Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="6994", yfinance_ticker="BSOFT.NS", segment="Information Technology"),
+    Instrument("BLUEDART", "Blue Dart Express Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="495", yfinance_ticker="BLUEDART.NS", segment="Services"),
+    Instrument("BLUEJET", "Blue Jet Healthcare Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="19686", yfinance_ticker="BLUEJET.NS", segment="Healthcare"),
+    Instrument("BLUESTARCO", "Blue Star Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="8311", yfinance_ticker="BLUESTARCO.NS", segment="Consumer Durables"),
+    Instrument("BBTC", "Bombay Burmah Trading Corporation Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="380", yfinance_ticker="BBTC.NS", segment="Fast Moving Consumer Goods"),
+    Instrument("BOSCHLTD", "Bosch Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="2181", yfinance_ticker="BOSCHLTD.NS", segment="Automobile and Auto Components"),
+    Instrument("FIRSTCRY", "Brainbees Solutions Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="24814", yfinance_ticker="FIRSTCRY.NS", segment="Consumer Services"),
+    Instrument("BRIGADE", "Brigade Enterprises Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="15184", yfinance_ticker="BRIGADE.NS", segment="Realty"),
+    Instrument("BRITANNIA", "Britannia Industries Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="547", yfinance_ticker="BRITANNIA.NS", segment="Fast Moving Consumer Goods"),
+    Instrument("MAPMYINDIA", "C.E. Info Systems Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="7227", yfinance_ticker="MAPMYINDIA.NS", segment="Information Technology"),
+    Instrument("CCL", "CCL Products (I) Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="11452", yfinance_ticker="CCL.NS", segment="Fast Moving Consumer Goods"),
+    Instrument("CESC", "CESC Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="628", yfinance_ticker="CESC.NS", segment="Power"),
+    Instrument("CGPOWER", "CG Power and Industrial Solutions Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="760", yfinance_ticker="CGPOWER.NS", segment="Capital Goods"),
+    Instrument("CRISIL", "CRISIL Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="757", yfinance_ticker="CRISIL.NS", segment="Financial Services"),
+    Instrument("CAMPUS", "Campus Activewear Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="9362", yfinance_ticker="CAMPUS.NS", segment="Consumer Durables"),
+    Instrument("CANFINHOME", "Can Fin Homes Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="583", yfinance_ticker="CANFINHOME.NS", segment="Financial Services"),
+    Instrument("CANBK", "Canara Bank", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="10794", yfinance_ticker="CANBK.NS", segment="Financial Services"),
+    Instrument("CAPLIPOINT", "Caplin Point Laboratories Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="3906", yfinance_ticker="CAPLIPOINT.NS", segment="Healthcare"),
+    Instrument("CGCL", "Capri Global Capital Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="20329", yfinance_ticker="CGCL.NS", segment="Financial Services"),
+    Instrument("CARBORUNIV", "Carborundum Universal Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="595", yfinance_ticker="CARBORUNIV.NS", segment="Capital Goods"),
+    Instrument("CASTROLIND", "Castrol India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1250", yfinance_ticker="CASTROLIND.NS", segment="Oil Gas & Consumable Fuels"),
+    Instrument("CEATLTD", "Ceat Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="15254", yfinance_ticker="CEATLTD.NS", segment="Automobile and Auto Components"),
+    Instrument("CENTRALBK", "Central Bank of India", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="14894", yfinance_ticker="CENTRALBK.NS", segment="Financial Services"),
+    Instrument("CDSL", "Central Depository Services (India) Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="21174", yfinance_ticker="CDSL.NS", segment="Financial Services"),
+    Instrument("CENTURYPLY", "Century Plyboards (India) Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="13305", yfinance_ticker="CENTURYPLY.NS", segment="Consumer Durables"),
+    Instrument("CERA", "Cera Sanitaryware Ltd", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="15039", yfinance_ticker="CERA.NS", segment="Consumer Durables"),
+    Instrument("CHALET", "Chalet Hotels Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="8546", yfinance_ticker="CHALET.NS", segment="Consumer Services"),
+    Instrument("CHAMBLFERT", "Chambal Fertilizers & Chemicals Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="637", yfinance_ticker="CHAMBLFERT.NS", segment="Chemicals"),
+    Instrument("CHENNPETRO", "Chennai Petroleum Corporation Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="2049", yfinance_ticker="CHENNPETRO.NS", segment="Oil Gas & Consumable Fuels"),
+    Instrument("CHOICEIN", "Choice International Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="8866", yfinance_ticker="CHOICEIN.NS", segment="Financial Services"),
+    Instrument("CHOLAHLDNG", "Cholamandalam Financial Holdings Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="21740", yfinance_ticker="CHOLAHLDNG.NS", segment="Financial Services"),
+    Instrument("CHOLAFIN", "Cholamandalam Investment and Finance Company Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="685", yfinance_ticker="CHOLAFIN.NS", segment="Financial Services"),
+    Instrument("CIPLA", "Cipla Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="694", yfinance_ticker="CIPLA.NS", segment="Healthcare"),
+    Instrument("CUB", "City Union Bank Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="5701", yfinance_ticker="CUB.NS", segment="Financial Services"),
+    Instrument("CLEAN", "Clean Science and Technology Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="5049", yfinance_ticker="CLEAN.NS", segment="Chemicals"),
+    Instrument("COALINDIA", "Coal India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="20374", yfinance_ticker="COALINDIA.NS", segment="Oil Gas & Consumable Fuels"),
+    Instrument("COCHINSHIP", "Cochin Shipyard Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="21508", yfinance_ticker="COCHINSHIP.NS", segment="Capital Goods"),
+    Instrument("COFORGE", "Coforge Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="11543", yfinance_ticker="COFORGE.NS", segment="Information Technology"),
+    Instrument("COHANCE", "Cohance Lifesciences Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="17945", yfinance_ticker="COHANCE.NS", segment="Healthcare"),
+    Instrument("COLPAL", "Colgate Palmolive (India) Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="15141", yfinance_ticker="COLPAL.NS", segment="Fast Moving Consumer Goods"),
+    Instrument("CAMS", "Computer Age Management Services Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="342", yfinance_ticker="CAMS.NS", segment="Financial Services"),
+    Instrument("CONCORDBIO", "Concord Biotech Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="18060", yfinance_ticker="CONCORDBIO.NS", segment="Healthcare"),
+    Instrument("CONCOR", "Container Corporation of India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="4749", yfinance_ticker="CONCOR.NS", segment="Services"),
+    Instrument("COROMANDEL", "Coromandel International Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="739", yfinance_ticker="COROMANDEL.NS", segment="Chemicals"),
+    Instrument("CRAFTSMAN", "Craftsman Automation Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="2854", yfinance_ticker="CRAFTSMAN.NS", segment="Automobile and Auto Components"),
+    Instrument("CREDITACC", "CreditAccess Grameen Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="4421", yfinance_ticker="CREDITACC.NS", segment="Financial Services"),
+    Instrument("CROMPTON", "Crompton Greaves Consumer Electricals Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="17094", yfinance_ticker="CROMPTON.NS", segment="Consumer Durables"),
+    Instrument("CUMMINSIND", "Cummins India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1901", yfinance_ticker="CUMMINSIND.NS", segment="Capital Goods"),
+    Instrument("CYIENT", "Cyient Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="5748", yfinance_ticker="CYIENT.NS", segment="Information Technology"),
+    Instrument("DCMSHRIRAM", "DCM Shriram Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="811", yfinance_ticker="DCMSHRIRAM.NS", segment="Diversified"),
+    Instrument("DLF", "DLF Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="14732", yfinance_ticker="DLF.NS", segment="Realty"),
+    Instrument("DOMS", "DOMS Industries Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="20551", yfinance_ticker="DOMS.NS", segment="Fast Moving Consumer Goods"),
+    Instrument("DABUR", "Dabur India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="772", yfinance_ticker="DABUR.NS", segment="Fast Moving Consumer Goods"),
+    Instrument("DALBHARAT", "Dalmia Bharat Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="8075", yfinance_ticker="DALBHARAT.NS", segment="Construction Materials"),
+    Instrument("DATAPATTNS", "Data Patterns (India) Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="7358", yfinance_ticker="DATAPATTNS.NS", segment="Capital Goods"),
+    Instrument("DEEPAKFERT", "Deepak Fertilisers & Petrochemicals Corp. Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="827", yfinance_ticker="DEEPAKFERT.NS", segment="Chemicals"),
+    Instrument("DEEPAKNTR", "Deepak Nitrite Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="19943", yfinance_ticker="DEEPAKNTR.NS", segment="Chemicals"),
+    Instrument("DELHIVERY", "Delhivery Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="9599", yfinance_ticker="DELHIVERY.NS", segment="Services"),
+    Instrument("DEVYANI", "Devyani International Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="5373", yfinance_ticker="DEVYANI.NS", segment="Consumer Services"),
+    Instrument("DIVISLAB", "Divi's Laboratories Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="10940", yfinance_ticker="DIVISLAB.NS", segment="Healthcare"),
+    Instrument("DIXON", "Dixon Technologies (India) Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="21690", yfinance_ticker="DIXON.NS", segment="Consumer Durables"),
+    Instrument("AGARWALEYE", "Dr. Agarwal's Health Care Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="29452", yfinance_ticker="AGARWALEYE.NS", segment="Healthcare"),
+    Instrument("LALPATHLAB", "Dr. Lal Path Labs Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="11654", yfinance_ticker="LALPATHLAB.NS", segment="Healthcare"),
+    Instrument("DRREDDY", "Dr. Reddy's Laboratories Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="881", yfinance_ticker="DRREDDY.NS", segment="Healthcare"),
+    Instrument("EIDPARRY", "E.I.D. Parry (India) Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="916", yfinance_ticker="EIDPARRY.NS", segment="Fast Moving Consumer Goods"),
+    Instrument("EIHOTEL", "EIH Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="919", yfinance_ticker="EIHOTEL.NS", segment="Consumer Services"),
+    Instrument("EICHERMOT", "Eicher Motors Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="910", yfinance_ticker="EICHERMOT.NS", segment="Automobile and Auto Components"),
+    Instrument("ELECON", "Elecon Engineering Co. Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="13643", yfinance_ticker="ELECON.NS", segment="Capital Goods"),
+    Instrument("ELGIEQUIP", "Elgi Equipments Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="937", yfinance_ticker="ELGIEQUIP.NS", segment="Capital Goods"),
+    Instrument("EMAMILTD", "Emami Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="13517", yfinance_ticker="EMAMILTD.NS", segment="Fast Moving Consumer Goods"),
+    Instrument("EMCURE", "Emcure Pharmaceuticals Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="24398", yfinance_ticker="EMCURE.NS", segment="Healthcare"),
+    Instrument("ENDURANCE", "Endurance Technologies Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="18822", yfinance_ticker="ENDURANCE.NS", segment="Automobile and Auto Components"),
+    Instrument("ENGINERSIN", "Engineers India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="4907", yfinance_ticker="ENGINERSIN.NS", segment="Construction"),
+    Instrument("ERIS", "Eris Lifesciences Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="21154", yfinance_ticker="ERIS.NS", segment="Healthcare"),
+    Instrument("ESCORTS", "Escorts Kubota Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="958", yfinance_ticker="ESCORTS.NS", segment="Capital Goods"),
+    Instrument("ETERNAL", "Eternal Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="5097", yfinance_ticker="ETERNAL.NS", segment="Consumer Services"),
+    Instrument("EXIDEIND", "Exide Industries Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="676", yfinance_ticker="EXIDEIND.NS", segment="Automobile and Auto Components"),
+    Instrument("NYKAA", "FSN E-Commerce Ventures Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="6545", yfinance_ticker="NYKAA.NS", segment="Consumer Services"),
+    Instrument("FEDERALBNK", "Federal Bank Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1023", yfinance_ticker="FEDERALBNK.NS", segment="Financial Services"),
+    Instrument("FACT", "Fertilisers and Chemicals Travancore Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1008", yfinance_ticker="FACT.NS", segment="Chemicals"),
+    Instrument("FINCABLES", "Finolex Cables Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1038", yfinance_ticker="FINCABLES.NS", segment="Capital Goods"),
+    Instrument("FINPIPE", "Finolex Industries Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1041", yfinance_ticker="FINPIPE.NS", segment="Capital Goods"),
+    Instrument("FSL", "Firstsource Solutions Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="14304", yfinance_ticker="FSL.NS", segment="Services"),
+    Instrument("FIVESTAR", "Five-Star Business Finance Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="12032", yfinance_ticker="FIVESTAR.NS", segment="Financial Services"),
+    Instrument("FORCEMOT", "Force Motors Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="11573", yfinance_ticker="FORCEMOT.NS", segment="Automobile and Auto Components"),
+    Instrument("FORTIS", "Fortis Healthcare Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="14592", yfinance_ticker="FORTIS.NS", segment="Healthcare"),
+    Instrument("GAIL", "GAIL (India) Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="4717", yfinance_ticker="GAIL.NS", segment="Oil Gas & Consumable Fuels"),
+    Instrument("GVT&D", "GE Vernova T&D India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="16783", yfinance_ticker="GVT&D.NS", segment="Capital Goods"),
+    Instrument("GMRAIRPORT", "GMR Airports Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="13528", yfinance_ticker="GMRAIRPORT.NS", segment="Services"),
+    Instrument("GRSE", "Garden Reach Shipbuilders & Engineers Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="5475", yfinance_ticker="GRSE.NS", segment="Capital Goods"),
+    Instrument("GICRE", "General Insurance Corporation of India", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="277", yfinance_ticker="GICRE.NS", segment="Financial Services"),
+    Instrument("GILLETTE", "Gillette India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1576", yfinance_ticker="GILLETTE.NS", segment="Fast Moving Consumer Goods"),
+    Instrument("GLAND", "Gland Pharma Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1186", yfinance_ticker="GLAND.NS", segment="Healthcare"),
+    Instrument("GLAXO", "Glaxosmithkline Pharmaceuticals Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1153", yfinance_ticker="GLAXO.NS", segment="Healthcare"),
+    Instrument("GLENMARK", "Glenmark Pharmaceuticals Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="7406", yfinance_ticker="GLENMARK.NS", segment="Healthcare"),
+    Instrument("MEDANTA", "Global Health Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="11956", yfinance_ticker="MEDANTA.NS", segment="Healthcare"),
+    Instrument("GODIGIT", "Go Digit General Insurance Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="23799", yfinance_ticker="GODIGIT.NS", segment="Financial Services"),
+    Instrument("GPIL", "Godawari Power & Ispat Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="13409", yfinance_ticker="GPIL.NS", segment="Capital Goods"),
+    Instrument("GODFRYPHLP", "Godfrey Phillips India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1181", yfinance_ticker="GODFRYPHLP.NS", segment="Fast Moving Consumer Goods"),
+    Instrument("GODREJAGRO", "Godrej Agrovet Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="144", yfinance_ticker="GODREJAGRO.NS", segment="Fast Moving Consumer Goods"),
+    Instrument("GODREJCP", "Godrej Consumer Products Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="10099", yfinance_ticker="GODREJCP.NS", segment="Fast Moving Consumer Goods"),
+    Instrument("GODREJIND", "Godrej Industries Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="10925", yfinance_ticker="GODREJIND.NS", segment="Diversified"),
+    Instrument("GODREJPROP", "Godrej Properties Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="17875", yfinance_ticker="GODREJPROP.NS", segment="Realty"),
+    Instrument("GRANULES", "Granules India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="11872", yfinance_ticker="GRANULES.NS", segment="Healthcare"),
+    Instrument("GRAPHITE", "Graphite India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="592", yfinance_ticker="GRAPHITE.NS", segment="Capital Goods"),
+    Instrument("GRASIM", "Grasim Industries Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1232", yfinance_ticker="GRASIM.NS", segment="Construction Materials"),
+    Instrument("GRAVITA", "Gravita India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="20534", yfinance_ticker="GRAVITA.NS", segment="Metals & Mining"),
+    Instrument("GESHIP", "Great Eastern Shipping Co. Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="13776", yfinance_ticker="GESHIP.NS", segment="Services"),
+    Instrument("FLUOROCHEM", "Gujarat Fluorochemicals Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="13750", yfinance_ticker="FLUOROCHEM.NS", segment="Chemicals"),
+    Instrument("GUJGASLTD", "Gujarat Gas Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="10599", yfinance_ticker="GUJGASLTD.NS", segment="Oil Gas & Consumable Fuels"),
+    Instrument("GMDCLTD", "Gujarat Mineral Development Corporation Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="5204", yfinance_ticker="GMDCLTD.NS", segment="Metals & Mining"),
+    Instrument("GSPL", "Gujarat State Petronet Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="13197", yfinance_ticker="GSPL.NS", segment="Oil Gas & Consumable Fuels"),
+    Instrument("HEG", "H.E.G. Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1336", yfinance_ticker="HEG.NS", segment="Capital Goods"),
+    Instrument("HBLENGINE", "HBL Engineering Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="13966", yfinance_ticker="HBLENGINE.NS", segment="Capital Goods"),
+    Instrument("HCLTECH", "HCL Technologies Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="7229", yfinance_ticker="HCLTECH.NS", segment="Information Technology"),
+    Instrument("HDFCAMC", "HDFC Asset Management Company Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="4244", yfinance_ticker="HDFCAMC.NS", segment="Financial Services"),
+    Instrument("HDFCBANK", "HDFC Bank Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1333", yfinance_ticker="HDFCBANK.NS", segment="Financial Services"),
+    Instrument("HDFCLIFE", "HDFC Life Insurance Company Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="467", yfinance_ticker="HDFCLIFE.NS", segment="Financial Services"),
+    Instrument("HFCL", "HFCL Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="21951", yfinance_ticker="HFCL.NS", segment="Telecommunication"),
+    Instrument("HAPPSTMNDS", "Happiest Minds Technologies Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="48", yfinance_ticker="HAPPSTMNDS.NS", segment="Information Technology"),
+    Instrument("HAVELLS", "Havells India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="9819", yfinance_ticker="HAVELLS.NS", segment="Consumer Durables"),
+    Instrument("HEROMOTOCO", "Hero MotoCorp Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1348", yfinance_ticker="HEROMOTOCO.NS", segment="Automobile and Auto Components"),
+    Instrument("HEXT", "Hexaware Technologies Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="29666", yfinance_ticker="HEXT.NS", segment="Information Technology"),
+    Instrument("HSCL", "Himadri Speciality Chemical Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="14334", yfinance_ticker="HSCL.NS", segment="Chemicals"),
+    Instrument("HINDALCO", "Hindalco Industries Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1363", yfinance_ticker="HINDALCO.NS", segment="Metals & Mining"),
+    Instrument("HAL", "Hindustan Aeronautics Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="2303", yfinance_ticker="HAL.NS", segment="Capital Goods"),
+    Instrument("HINDCOPPER", "Hindustan Copper Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="17939", yfinance_ticker="HINDCOPPER.NS", segment="Metals & Mining"),
+    Instrument("HINDPETRO", "Hindustan Petroleum Corporation Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1406", yfinance_ticker="HINDPETRO.NS", segment="Oil Gas & Consumable Fuels"),
+    Instrument("HINDUNILVR", "Hindustan Unilever Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1394", yfinance_ticker="HINDUNILVR.NS", segment="Fast Moving Consumer Goods"),
+    Instrument("HINDZINC", "Hindustan Zinc Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1424", yfinance_ticker="HINDZINC.NS", segment="Metals & Mining"),
+    Instrument("POWERINDIA", "Hitachi Energy India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="18457", yfinance_ticker="POWERINDIA.NS", segment="Capital Goods"),
+    Instrument("HOMEFIRST", "Home First Finance Company India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="2056", yfinance_ticker="HOMEFIRST.NS", segment="Financial Services"),
+    Instrument("HONASA", "Honasa Consumer Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="19813", yfinance_ticker="HONASA.NS", segment="Fast Moving Consumer Goods"),
+    Instrument("HONAUT", "Honeywell Automation India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="3417", yfinance_ticker="HONAUT.NS", segment="Capital Goods"),
+    Instrument("HUDCO", "Housing & Urban Development Corporation Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="20825", yfinance_ticker="HUDCO.NS", segment="Financial Services"),
+    Instrument("HYUNDAI", "Hyundai Motor India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="25844", yfinance_ticker="HYUNDAI.NS", segment="Automobile and Auto Components"),
+    Instrument("ICICIBANK", "ICICI Bank Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="4963", yfinance_ticker="ICICIBANK.NS", segment="Financial Services"),
+    Instrument("ICICIGI", "ICICI Lombard General Insurance Company Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="21770", yfinance_ticker="ICICIGI.NS", segment="Financial Services"),
+    Instrument("ICICIPRULI", "ICICI Prudential Life Insurance Company Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="18652", yfinance_ticker="ICICIPRULI.NS", segment="Financial Services"),
+    Instrument("IDBI", "IDBI Bank Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1476", yfinance_ticker="IDBI.NS", segment="Financial Services"),
+    Instrument("IDFCFIRSTB", "IDFC First Bank Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="11184", yfinance_ticker="IDFCFIRSTB.NS", segment="Financial Services"),
+    Instrument("IFCI", "IFCI Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1491", yfinance_ticker="IFCI.NS", segment="Financial Services"),
+    Instrument("IIFL", "IIFL Finance Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="11809", yfinance_ticker="IIFL.NS", segment="Financial Services"),
+    Instrument("INOXINDIA", "INOX India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="20607", yfinance_ticker="INOXINDIA.NS", segment="Capital Goods"),
+    Instrument("IRB", "IRB Infrastructure Developers Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="15313", yfinance_ticker="IRB.NS", segment="Construction"),
+    Instrument("IRCON", "IRCON International Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="4986", yfinance_ticker="IRCON.NS", segment="Construction"),
+    Instrument("ITCHOTELS", "ITC Hotels Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="29251", yfinance_ticker="ITCHOTELS.NS", segment="Consumer Services"),
+    Instrument("ITC", "ITC Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1660", yfinance_ticker="ITC.NS", segment="Fast Moving Consumer Goods"),
+    Instrument("ITI", "ITI Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1675", yfinance_ticker="ITI.NS", segment="Telecommunication"),
+    Instrument("INDGN", "Indegene Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="23693", yfinance_ticker="INDGN.NS", segment="Healthcare"),
+    Instrument("INDIACEM", "India Cements Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1515", yfinance_ticker="INDIACEM.NS", segment="Construction Materials"),
+    Instrument("INDIAMART", "Indiamart Intermesh Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="10726", yfinance_ticker="INDIAMART.NS", segment="Consumer Services"),
+    Instrument("INDIANB", "Indian Bank", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="14309", yfinance_ticker="INDIANB.NS", segment="Financial Services"),
+    Instrument("IEX", "Indian Energy Exchange Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="220", yfinance_ticker="IEX.NS", segment="Financial Services"),
+    Instrument("INDHOTEL", "Indian Hotels Co. Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1512", yfinance_ticker="INDHOTEL.NS", segment="Consumer Services"),
+    Instrument("IOC", "Indian Oil Corporation Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1624", yfinance_ticker="IOC.NS", segment="Oil Gas & Consumable Fuels"),
+    Instrument("IOB", "Indian Overseas Bank", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="9348", yfinance_ticker="IOB.NS", segment="Financial Services"),
+    Instrument("IRCTC", "Indian Railway Catering And Tourism Corporation Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="13611", yfinance_ticker="IRCTC.NS", segment="Consumer Services"),
+    Instrument("IRFC", "Indian Railway Finance Corporation Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="2029", yfinance_ticker="IRFC.NS", segment="Financial Services"),
+    Instrument("IREDA", "Indian Renewable Energy Development Agency Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="20261", yfinance_ticker="IREDA.NS", segment="Financial Services"),
+    Instrument("IGL", "Indraprastha Gas Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="11262", yfinance_ticker="IGL.NS", segment="Oil Gas & Consumable Fuels"),
+    Instrument("INDUSTOWER", "Indus Towers Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="29135", yfinance_ticker="INDUSTOWER.NS", segment="Telecommunication"),
+    Instrument("INDUSINDBK", "IndusInd Bank Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="5258", yfinance_ticker="INDUSINDBK.NS", segment="Financial Services"),
+    Instrument("NAUKRI", "Info Edge (India) Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="13751", yfinance_ticker="NAUKRI.NS", segment="Consumer Services"),
+    Instrument("INFY", "Infosys Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1594", yfinance_ticker="INFY.NS", segment="Information Technology"),
+    Instrument("INOXWIND", "Inox Wind Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="7852", yfinance_ticker="INOXWIND.NS", segment="Capital Goods"),
+    Instrument("INTELLECT", "Intellect Design Arena Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="5926", yfinance_ticker="INTELLECT.NS", segment="Information Technology"),
+    Instrument("INDIGO", "InterGlobe Aviation Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="11195", yfinance_ticker="INDIGO.NS", segment="Services"),
+    Instrument("IGIL", "International Gemmological Institute (India) Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="28378", yfinance_ticker="IGIL.NS", segment="Services"),
+    Instrument("IKS", "Inventurus Knowledge Solutions Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="28125", yfinance_ticker="IKS.NS", segment="Information Technology"),
+    Instrument("IPCALAB", "Ipca Laboratories Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1633", yfinance_ticker="IPCALAB.NS", segment="Healthcare"),
+    Instrument("JBCHEPHARM", "J.B. Chemicals & Pharmaceuticals Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1726", yfinance_ticker="JBCHEPHARM.NS", segment="Healthcare"),
+    Instrument("JKCEMENT", "J.K. Cement Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="13270", yfinance_ticker="JKCEMENT.NS", segment="Construction Materials"),
+    Instrument("JBMA", "JBM Auto Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="11655", yfinance_ticker="JBMA.NS", segment="Automobile and Auto Components"),
+    Instrument("JKTYRE", "JK Tyre & Industries Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="14435", yfinance_ticker="JKTYRE.NS", segment="Automobile and Auto Components"),
+    Instrument("JMFINANCIL", "JM Financial Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="13637", yfinance_ticker="JMFINANCIL.NS", segment="Financial Services"),
+    Instrument("JSWCEMENT", "JSW Cement Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="758460", yfinance_ticker="JSWCEMENT.NS", segment="Construction Materials"),
+    Instrument("JSWENERGY", "JSW Energy Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="17869", yfinance_ticker="JSWENERGY.NS", segment="Power"),
+    Instrument("JSWINFRA", "JSW Infrastructure Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="19020", yfinance_ticker="JSWINFRA.NS", segment="Services"),
+    Instrument("JSWSTEEL", "JSW Steel Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="11723", yfinance_ticker="JSWSTEEL.NS", segment="Metals & Mining"),
+    Instrument("JPPOWER", "Jaiprakash Power Ventures Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="11763", yfinance_ticker="JPPOWER.NS", segment="Power"),
+    Instrument("J&KBANK", "Jammu & Kashmir Bank Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="5633", yfinance_ticker="J&KBANK.NS", segment="Financial Services"),
+    Instrument("JINDALSAW", "Jindal Saw Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="3024", yfinance_ticker="JINDALSAW.NS", segment="Capital Goods"),
+    Instrument("JSL", "Jindal Stainless Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="11236", yfinance_ticker="JSL.NS", segment="Metals & Mining"),
+    Instrument("JINDALSTEL", "Jindal Steel Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="6733", yfinance_ticker="JINDALSTEL.NS", segment="Metals & Mining"),
+    Instrument("JIOFIN", "Jio Financial Services Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="18143", yfinance_ticker="JIOFIN.NS", segment="Financial Services"),
+    Instrument("JUBLFOOD", "Jubilant Foodworks Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="18096", yfinance_ticker="JUBLFOOD.NS", segment="Consumer Services"),
+    Instrument("JUBLINGREA", "Jubilant Ingrevia Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="2783", yfinance_ticker="JUBLINGREA.NS", segment="Chemicals"),
+    Instrument("JUBLPHARMA", "Jubilant Pharmova Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="3637", yfinance_ticker="JUBLPHARMA.NS", segment="Healthcare"),
+    Instrument("JWL", "Jupiter Wagons Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="20224", yfinance_ticker="JWL.NS", segment="Capital Goods"),
+    Instrument("JYOTHYLAB", "Jyothy Labs Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="15146", yfinance_ticker="JYOTHYLAB.NS", segment="Fast Moving Consumer Goods"),
+    Instrument("JYOTICNC", "Jyoti CNC Automation Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="21334", yfinance_ticker="JYOTICNC.NS", segment="Capital Goods"),
+    Instrument("KPRMILL", "K.P.R. Mill Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="14912", yfinance_ticker="KPRMILL.NS", segment="Textiles"),
+    Instrument("KEI", "KEI Industries Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="13310", yfinance_ticker="KEI.NS", segment="Capital Goods"),
+    Instrument("KPITTECH", "KPIT Technologies Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="9683", yfinance_ticker="KPITTECH.NS", segment="Information Technology"),
+    Instrument("KSB", "KSB Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1949", yfinance_ticker="KSB.NS", segment="Capital Goods"),
+    Instrument("KAJARIACER", "Kajaria Ceramics Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1808", yfinance_ticker="KAJARIACER.NS", segment="Consumer Durables"),
+    Instrument("KPIL", "Kalpataru Projects International Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1814", yfinance_ticker="KPIL.NS", segment="Construction"),
+    Instrument("KALYANKJIL", "Kalyan Jewellers India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="2955", yfinance_ticker="KALYANKJIL.NS", segment="Consumer Durables"),
+    Instrument("KARURVYSYA", "Karur Vysya Bank Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1838", yfinance_ticker="KARURVYSYA.NS", segment="Financial Services"),
+    Instrument("KAYNES", "Kaynes Technology India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="12092", yfinance_ticker="KAYNES.NS", segment="Capital Goods"),
+    Instrument("KEC", "Kec International Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="13260", yfinance_ticker="KEC.NS", segment="Construction"),
+    Instrument("KFINTECH", "Kfin Technologies Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="13359", yfinance_ticker="KFINTECH.NS", segment="Financial Services"),
+    Instrument("KIRLOSBROS", "Kirloskar Brothers Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="18581", yfinance_ticker="KIRLOSBROS.NS", segment="Capital Goods"),
+    Instrument("KIRLOSENG", "Kirloskar Oil Eng Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="20936", yfinance_ticker="KIRLOSENG.NS", segment="Capital Goods"),
+    Instrument("KOTAKBANK", "Kotak Mahindra Bank Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1922", yfinance_ticker="KOTAKBANK.NS", segment="Financial Services"),
+    Instrument("KIMS", "Krishna Institute of Medical Sciences Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="4847", yfinance_ticker="KIMS.NS", segment="Healthcare"),
+    Instrument("LTF", "L&T Finance Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="24948", yfinance_ticker="LTF.NS", segment="Financial Services"),
+    Instrument("LTTS", "L&T Technology Services Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="18564", yfinance_ticker="LTTS.NS", segment="Information Technology"),
+    Instrument("LICHSGFIN", "LIC Housing Finance Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1997", yfinance_ticker="LICHSGFIN.NS", segment="Financial Services"),
+    Instrument("LTFOODS", "LT Foods Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="13816", yfinance_ticker="LTFOODS.NS", segment="Fast Moving Consumer Goods"),
+    Instrument("LTM", "LTIMindtree Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="17818", yfinance_ticker="LTM.NS", segment="Information Technology"),
+    Instrument("LT", "Larsen & Toubro Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="11483", yfinance_ticker="LT.NS", segment="Construction"),
+    Instrument("LATENTVIEW", "Latent View Analytics Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="6818", yfinance_ticker="LATENTVIEW.NS", segment="Information Technology"),
+    Instrument("LAURUSLABS", "Laurus Labs Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="19234", yfinance_ticker="LAURUSLABS.NS", segment="Healthcare"),
+    Instrument("THELEELA", "Leela Palaces Hotels & Resorts Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="757014", yfinance_ticker="THELEELA.NS", segment="Consumer Services"),
+    Instrument("LEMONTREE", "Lemon Tree Hotels Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="2606", yfinance_ticker="LEMONTREE.NS", segment="Consumer Services"),
+    Instrument("LICI", "Life Insurance Corporation of India", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="9480", yfinance_ticker="LICI.NS", segment="Financial Services"),
+    Instrument("LINDEINDIA", "Linde India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1627", yfinance_ticker="LINDEINDIA.NS", segment="Chemicals"),
+    Instrument("LLOYDSME", "Lloyds Metals And Energy Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="17313", yfinance_ticker="LLOYDSME.NS", segment="Metals & Mining"),
+    Instrument("LODHA", "Lodha Developers Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="3220", yfinance_ticker="LODHA.NS", segment="Realty"),
+    Instrument("LUPIN", "Lupin Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="10440", yfinance_ticker="LUPIN.NS", segment="Healthcare"),
+    Instrument("MMTC", "MMTC Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="17957", yfinance_ticker="MMTC.NS", segment="Services"),
+    Instrument("MRF", "MRF Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="2277", yfinance_ticker="MRF.NS", segment="Automobile and Auto Components"),
+    Instrument("MGL", "Mahanagar Gas Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="17534", yfinance_ticker="MGL.NS", segment="Oil Gas & Consumable Fuels"),
+    Instrument("MAHSCOOTER", "Maharashtra Scooters Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="2085", yfinance_ticker="MAHSCOOTER.NS", segment="Financial Services"),
+    Instrument("MAHSEAMLES", "Maharashtra Seamless Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="2088", yfinance_ticker="MAHSEAMLES.NS", segment="Capital Goods"),
+    Instrument("M&MFIN", "Mahindra & Mahindra Financial Services Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="13285", yfinance_ticker="M&MFIN.NS", segment="Financial Services"),
+    Instrument("M&M", "Mahindra & Mahindra Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="2031", yfinance_ticker="M&M.NS", segment="Automobile and Auto Components"),
+    Instrument("MANAPPURAM", "Manappuram Finance Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="19061", yfinance_ticker="MANAPPURAM.NS", segment="Financial Services"),
+    Instrument("MRPL", "Mangalore Refinery & Petrochemicals Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="2283", yfinance_ticker="MRPL.NS", segment="Oil Gas & Consumable Fuels"),
+    Instrument("MANKIND", "Mankind Pharma Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="15380", yfinance_ticker="MANKIND.NS", segment="Healthcare"),
+    Instrument("MARICO", "Marico Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="4067", yfinance_ticker="MARICO.NS", segment="Fast Moving Consumer Goods"),
+    Instrument("MARUTI", "Maruti Suzuki India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="10999", yfinance_ticker="MARUTI.NS", segment="Automobile and Auto Components"),
+    Instrument("MFSL", "Max Financial Services Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="2142", yfinance_ticker="MFSL.NS", segment="Financial Services"),
+    Instrument("MAXHEALTH", "Max Healthcare Institute Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="22377", yfinance_ticker="MAXHEALTH.NS", segment="Healthcare"),
+    Instrument("MAZDOCK", "Mazagoan Dock Shipbuilders Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="509", yfinance_ticker="MAZDOCK.NS", segment="Capital Goods"),
+    Instrument("METROPOLIS", "Metropolis Healthcare Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="9581", yfinance_ticker="METROPOLIS.NS", segment="Healthcare"),
+    Instrument("MINDACORP", "Minda Corporation Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="25897", yfinance_ticker="MINDACORP.NS", segment="Automobile and Auto Components"),
+    Instrument("MSUMI", "Motherson Sumi Wiring India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="8596", yfinance_ticker="MSUMI.NS", segment="Automobile and Auto Components"),
+    Instrument("MOTILALOFS", "Motilal Oswal Financial Services Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="14947", yfinance_ticker="MOTILALOFS.NS", segment="Financial Services"),
+    Instrument("MPHASIS", "MphasiS Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="4503", yfinance_ticker="MPHASIS.NS", segment="Information Technology"),
+    Instrument("MCX", "Multi Commodity Exchange of India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="31181", yfinance_ticker="MCX.NS", segment="Financial Services"),
+    Instrument("MUTHOOTFIN", "Muthoot Finance Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="23650", yfinance_ticker="MUTHOOTFIN.NS", segment="Financial Services"),
+    Instrument("NATCOPHARM", "NATCO Pharma Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="3918", yfinance_ticker="NATCOPHARM.NS", segment="Healthcare"),
+    Instrument("NBCC", "NBCC (India) Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="31415", yfinance_ticker="NBCC.NS", segment="Construction"),
+    Instrument("NCC", "NCC Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="2319", yfinance_ticker="NCC.NS", segment="Construction"),
+    Instrument("NHPC", "NHPC Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="17400", yfinance_ticker="NHPC.NS", segment="Power"),
+    Instrument("NLCINDIA", "NLC India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="8585", yfinance_ticker="NLCINDIA.NS", segment="Power"),
+    Instrument("NMDC", "NMDC Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="15332", yfinance_ticker="NMDC.NS", segment="Metals & Mining"),
+    Instrument("NSLNISP", "NMDC Steel Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="14180", yfinance_ticker="NSLNISP.NS", segment="Metals & Mining"),
+    Instrument("NTPCGREEN", "NTPC Green Energy Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="27176", yfinance_ticker="NTPCGREEN.NS", segment="Power"),
+    Instrument("NTPC", "NTPC Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="11630", yfinance_ticker="NTPC.NS", segment="Power"),
+    Instrument("NH", "Narayana Hrudayalaya Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="11840", yfinance_ticker="NH.NS", segment="Healthcare"),
+    Instrument("NATIONALUM", "National Aluminium Co. Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="6364", yfinance_ticker="NATIONALUM.NS", segment="Metals & Mining"),
+    Instrument("NAVA", "Nava Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="4014", yfinance_ticker="NAVA.NS", segment="Power"),
+    Instrument("NAVINFLUOR", "Navin Fluorine International Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="14672", yfinance_ticker="NAVINFLUOR.NS", segment="Chemicals"),
+    Instrument("NESTLEIND", "Nestle India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="17963", yfinance_ticker="NESTLEIND.NS", segment="Fast Moving Consumer Goods"),
+    Instrument("NETWEB", "Netweb Technologies India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="17433", yfinance_ticker="NETWEB.NS", segment="Information Technology"),
+    Instrument("NEULANDLAB", "Neuland Laboratories Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="2406", yfinance_ticker="NEULANDLAB.NS", segment="Healthcare"),
+    Instrument("NEWGEN", "Newgen Software Technologies Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1164", yfinance_ticker="NEWGEN.NS", segment="Information Technology"),
+    Instrument("NAM-INDIA", "Nippon Life India Asset Management Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="357", yfinance_ticker="NAM-INDIA.NS", segment="Financial Services"),
+    Instrument("NIVABUPA", "Niva Bupa Health Insurance Company Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="27097", yfinance_ticker="NIVABUPA.NS", segment="Financial Services"),
+    Instrument("NUVAMA", "Nuvama Wealth Management Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="18721", yfinance_ticker="NUVAMA.NS", segment="Financial Services"),
+    Instrument("NUVOCO", "Nuvoco Vistas Corporation Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="5426", yfinance_ticker="NUVOCO.NS", segment="Construction Materials"),
+    Instrument("OBEROIRLTY", "Oberoi Realty Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="20242", yfinance_ticker="OBEROIRLTY.NS", segment="Realty"),
+    Instrument("ONGC", "Oil & Natural Gas Corporation Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="2475", yfinance_ticker="ONGC.NS", segment="Oil Gas & Consumable Fuels"),
+    Instrument("OIL", "Oil India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="17438", yfinance_ticker="OIL.NS", segment="Oil Gas & Consumable Fuels"),
+    Instrument("OLAELEC", "Ola Electric Mobility Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="24777", yfinance_ticker="OLAELEC.NS", segment="Automobile and Auto Components"),
+    Instrument("OLECTRA", "Olectra Greentech Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="10637", yfinance_ticker="OLECTRA.NS", segment="Automobile and Auto Components"),
+    Instrument("PAYTM", "One 97 Communications Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="6705", yfinance_ticker="PAYTM.NS", segment="Financial Services"),
+    Instrument("ONESOURCE", "Onesource Specialty Pharma Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="29224", yfinance_ticker="ONESOURCE.NS", segment="Healthcare"),
+    Instrument("OFSS", "Oracle Financial Services Software Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="10738", yfinance_ticker="OFSS.NS", segment="Information Technology"),
+    Instrument("POLICYBZR", "PB Fintech Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="6656", yfinance_ticker="POLICYBZR.NS", segment="Financial Services"),
+    Instrument("PCBL", "PCBL Chemical Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="2649", yfinance_ticker="PCBL.NS", segment="Chemicals"),
+    Instrument("PGEL", "PG Electroplast Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="25358", yfinance_ticker="PGEL.NS", segment="Consumer Durables"),
+    Instrument("PIIND", "PI Industries Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="24184", yfinance_ticker="PIIND.NS", segment="Chemicals"),
+    Instrument("PNBHOUSING", "PNB Housing Finance Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="18908", yfinance_ticker="PNBHOUSING.NS", segment="Financial Services"),
+    Instrument("PTCIL", "PTC Industries Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="16682", yfinance_ticker="PTCIL.NS", segment="Capital Goods"),
+    Instrument("PVRINOX", "PVR INOX Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="13147", yfinance_ticker="PVRINOX.NS", segment="Media Entertainment & Publication"),
+    Instrument("PAGEIND", "Page Industries Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="14413", yfinance_ticker="PAGEIND.NS", segment="Textiles"),
+    Instrument("PATANJALI", "Patanjali Foods Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="17029", yfinance_ticker="PATANJALI.NS", segment="Fast Moving Consumer Goods"),
+    Instrument("PERSISTENT", "Persistent Systems Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="18365", yfinance_ticker="PERSISTENT.NS", segment="Information Technology"),
+    Instrument("PETRONET", "Petronet LNG Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="11351", yfinance_ticker="PETRONET.NS", segment="Oil Gas & Consumable Fuels"),
+    Instrument("PFIZER", "Pfizer Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="2643", yfinance_ticker="PFIZER.NS", segment="Healthcare"),
+    Instrument("PHOENIXLTD", "Phoenix Mills Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="14552", yfinance_ticker="PHOENIXLTD.NS", segment="Realty"),
+    Instrument("PIDILITIND", "Pidilite Industries Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="2664", yfinance_ticker="PIDILITIND.NS", segment="Chemicals"),
+    Instrument("PPLPHARMA", "Piramal Pharma Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="11571", yfinance_ticker="PPLPHARMA.NS", segment="Healthcare"),
+    Instrument("POLYMED", "Poly Medicure Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="25718", yfinance_ticker="POLYMED.NS", segment="Healthcare"),
+    Instrument("POLYCAB", "Polycab India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="9590", yfinance_ticker="POLYCAB.NS", segment="Capital Goods"),
+    Instrument("POONAWALLA", "Poonawalla Fincorp Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="11403", yfinance_ticker="POONAWALLA.NS", segment="Financial Services"),
+    Instrument("PFC", "Power Finance Corporation Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="14299", yfinance_ticker="PFC.NS", segment="Financial Services"),
+    Instrument("POWERGRID", "Power Grid Corporation of India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="14977", yfinance_ticker="POWERGRID.NS", segment="Power"),
+    Instrument("PRAJIND", "Praj Industries Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="2705", yfinance_ticker="PRAJIND.NS", segment="Capital Goods"),
+    Instrument("PREMIERENE", "Premier Energies Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="25049", yfinance_ticker="PREMIERENE.NS", segment="Capital Goods"),
+    Instrument("PRESTIGE", "Prestige Estates Projects Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="20302", yfinance_ticker="PRESTIGE.NS", segment="Realty"),
+    Instrument("PGHH", "Procter & Gamble Hygiene & Health Care Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="2535", yfinance_ticker="PGHH.NS", segment="Fast Moving Consumer Goods"),
+    Instrument("PNB", "Punjab National Bank", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="10666", yfinance_ticker="PNB.NS", segment="Financial Services"),
+    Instrument("RRKABEL", "R R Kabel Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="18566", yfinance_ticker="RRKABEL.NS", segment="Capital Goods"),
+    Instrument("RBLBANK", "RBL Bank Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="18391", yfinance_ticker="RBLBANK.NS", segment="Financial Services"),
+    Instrument("RECLTD", "REC Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="15355", yfinance_ticker="RECLTD.NS", segment="Financial Services"),
+    Instrument("RHIM", "RHI MAGNESITA INDIA LTD.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="31163", yfinance_ticker="RHIM.NS", segment="Capital Goods"),
+    Instrument("RITES", "RITES Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="3761", yfinance_ticker="RITES.NS", segment="Construction"),
+    Instrument("RADICO", "Radico Khaitan Ltd", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="10990", yfinance_ticker="RADICO.NS", segment="Fast Moving Consumer Goods"),
+    Instrument("RVNL", "Rail Vikas Nigam Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="9552", yfinance_ticker="RVNL.NS", segment="Construction"),
+    Instrument("RAILTEL", "Railtel Corporation Of India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="2431", yfinance_ticker="RAILTEL.NS", segment="Telecommunication"),
+    Instrument("RAINBOW", "Rainbow Childrens Medicare Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="9408", yfinance_ticker="RAINBOW.NS", segment="Healthcare"),
+    Instrument("RKFORGE", "Ramkrishna Forgings Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="11411", yfinance_ticker="RKFORGE.NS", segment="Automobile and Auto Components"),
+    Instrument("RCF", "Rashtriya Chemicals & Fertilizers Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="2866", yfinance_ticker="RCF.NS", segment="Chemicals"),
+    Instrument("REDINGTON", "Redington Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="14255", yfinance_ticker="REDINGTON.NS", segment="Services"),
+    Instrument("RELIANCE", "Reliance Industries Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="2885", yfinance_ticker="RELIANCE.NS", segment="Oil Gas & Consumable Fuels"),
+    Instrument("RPOWER", "Reliance Power Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="15259", yfinance_ticker="RPOWER.NS", segment="Power"),
+    Instrument("SBFC", "SBFC Finance Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="18026", yfinance_ticker="SBFC.NS", segment="Financial Services"),
+    Instrument("SBICARD", "SBI Cards and Payment Services Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="17971", yfinance_ticker="SBICARD.NS", segment="Financial Services"),
+    Instrument("SBILIFE", "SBI Life Insurance Company Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="21808", yfinance_ticker="SBILIFE.NS", segment="Financial Services"),
+    Instrument("SJVN", "SJVN Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="18883", yfinance_ticker="SJVN.NS", segment="Power"),
+    Instrument("SRF", "SRF Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="3273", yfinance_ticker="SRF.NS", segment="Chemicals"),
+    Instrument("SAGILITY", "Sagility Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="27052", yfinance_ticker="SAGILITY.NS", segment="Information Technology"),
+    Instrument("SAILIFE", "Sai Life Sciences Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="27839", yfinance_ticker="SAILIFE.NS", segment="Healthcare"),
+    Instrument("SAMMAANCAP", "Sammaan Capital Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="30125", yfinance_ticker="SAMMAANCAP.NS", segment="Financial Services"),
+    Instrument("MOTHERSON", "Samvardhana Motherson International Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="4204", yfinance_ticker="MOTHERSON.NS", segment="Automobile and Auto Components"),
+    Instrument("SAPPHIRE", "Sapphire Foods India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="6718", yfinance_ticker="SAPPHIRE.NS", segment="Consumer Services"),
+    Instrument("SARDAEN", "Sarda Energy and Minerals Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="17758", yfinance_ticker="SARDAEN.NS", segment="Metals & Mining"),
+    Instrument("SAREGAMA", "Saregama India Ltd", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="4892", yfinance_ticker="SAREGAMA.NS", segment="Media Entertainment & Publication"),
+    Instrument("SCHAEFFLER", "Schaeffler India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1011", yfinance_ticker="SCHAEFFLER.NS", segment="Automobile and Auto Components"),
+    Instrument("SCI", "Shipping Corporation of India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="3048", yfinance_ticker="SCI.NS", segment="Services"),
+    Instrument("SHREECEM", "Shree Cement Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="3103", yfinance_ticker="SHREECEM.NS", segment="Construction Materials"),
+    Instrument("SHRIRAMFIN", "Shriram Finance Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="4306", yfinance_ticker="SHRIRAMFIN.NS", segment="Financial Services"),
+    Instrument("SHYAMMETL", "Shyam Metalics and Energy Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="4693", yfinance_ticker="SHYAMMETL.NS", segment="Capital Goods"),
+    Instrument("ENRIN", "Siemens Energy India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="756871", yfinance_ticker="ENRIN.NS", segment="Capital Goods"),
+    Instrument("SIEMENS", "Siemens Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="3150", yfinance_ticker="SIEMENS.NS", segment="Capital Goods"),
+    Instrument("SIGNATURE", "Signatureglobal (India) Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="18743", yfinance_ticker="SIGNATURE.NS", segment="Realty"),
+    Instrument("SOBHA", "Sobha Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="13826", yfinance_ticker="SOBHA.NS", segment="Realty"),
+    Instrument("SOLARINDS", "Solar Industries India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="13332", yfinance_ticker="SOLARINDS.NS", segment="Chemicals"),
+    Instrument("SONACOMS", "Sona BLW Precision Forgings Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="4684", yfinance_ticker="SONACOMS.NS", segment="Automobile and Auto Components"),
+    Instrument("SONATSOFTW", "Sonata Software Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="6596", yfinance_ticker="SONATSOFTW.NS", segment="Information Technology"),
+    Instrument("STARHEALTH", "Star Health and Allied Insurance Company Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="7083", yfinance_ticker="STARHEALTH.NS", segment="Financial Services"),
+    Instrument("SBIN", "State Bank of India", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="3045", yfinance_ticker="SBIN.NS", segment="Financial Services"),
+    Instrument("SAIL", "Steel Authority of India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="2963", yfinance_ticker="SAIL.NS", segment="Metals & Mining"),
+    Instrument("SUMICHEM", "Sumitomo Chemical India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="17105", yfinance_ticker="SUMICHEM.NS", segment="Chemicals"),
+    Instrument("SUNPHARMA", "Sun Pharmaceutical Industries Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="3351", yfinance_ticker="SUNPHARMA.NS", segment="Healthcare"),
+    Instrument("SUNTV", "Sun TV Network Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="13404", yfinance_ticker="SUNTV.NS", segment="Media Entertainment & Publication"),
+    Instrument("SUNDARMFIN", "Sundaram Finance Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="3339", yfinance_ticker="SUNDARMFIN.NS", segment="Financial Services"),
+    Instrument("SUNDRMFAST", "Sundram Fasteners Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="3345", yfinance_ticker="SUNDRMFAST.NS", segment="Automobile and Auto Components"),
+    Instrument("SUPREMEIND", "Supreme Industries Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="3363", yfinance_ticker="SUPREMEIND.NS", segment="Capital Goods"),
+    Instrument("SUZLON", "Suzlon Energy Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="12018", yfinance_ticker="SUZLON.NS", segment="Capital Goods"),
+    Instrument("SWANCORP", "Swan Corp Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="27095", yfinance_ticker="SWANCORP.NS", segment="Chemicals"),
+    Instrument("SWIGGY", "Swiggy Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="27066", yfinance_ticker="SWIGGY.NS", segment="Consumer Services"),
+    Instrument("SYNGENE", "Syngene International Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="10243", yfinance_ticker="SYNGENE.NS", segment="Healthcare"),
+    Instrument("SYRMA", "Syrma SGS Technology Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="10793", yfinance_ticker="SYRMA.NS", segment="Capital Goods"),
+    Instrument("TBOTEK", "TBO Tek Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="23740", yfinance_ticker="TBOTEK.NS", segment="Consumer Services"),
+    Instrument("TVSMOTOR", "TVS Motor Company Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="8479", yfinance_ticker="TVSMOTOR.NS", segment="Automobile and Auto Components"),
+    Instrument("TATACHEM", "Tata Chemicals Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="3405", yfinance_ticker="TATACHEM.NS", segment="Chemicals"),
+    Instrument("TATACOMM", "Tata Communications Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="3721", yfinance_ticker="TATACOMM.NS", segment="Telecommunication"),
+    Instrument("TCS", "Tata Consultancy Services Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="11536", yfinance_ticker="TCS.NS", segment="Information Technology"),
+    Instrument("TATACONSUM", "Tata Consumer Products Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="3432", yfinance_ticker="TATACONSUM.NS", segment="Fast Moving Consumer Goods"),
+    Instrument("TATAELXSI", "Tata Elxsi Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="3411", yfinance_ticker="TATAELXSI.NS", segment="Information Technology"),
+    Instrument("TATAINVEST", "Tata Investment Corporation Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1621", yfinance_ticker="TATAINVEST.NS", segment="Financial Services"),
+    Instrument("TMPV", "Tata Motors Passenger Vehicles Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="3456", yfinance_ticker="TMPV.NS", segment="Automobile and Auto Components"),
+    Instrument("TATAPOWER", "Tata Power Co. Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="3426", yfinance_ticker="TATAPOWER.NS", segment="Power"),
+    Instrument("TATASTEEL", "Tata Steel Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="3499", yfinance_ticker="TATASTEEL.NS", segment="Metals & Mining"),
+    Instrument("TATATECH", "Tata Technologies Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="20293", yfinance_ticker="TATATECH.NS", segment="Information Technology"),
+    Instrument("TTML", "Tata Teleservices (Maharashtra) Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="8954", yfinance_ticker="TTML.NS", segment="Telecommunication"),
+    Instrument("TECHM", "Tech Mahindra Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="13538", yfinance_ticker="TECHM.NS", segment="Information Technology"),
+    Instrument("TECHNOE", "Techno Electric & Engineering Company Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="6445", yfinance_ticker="TECHNOE.NS", segment="Construction"),
+    Instrument("TEJASNET", "Tejas Networks Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="21131", yfinance_ticker="TEJASNET.NS", segment="Telecommunication"),
+    Instrument("NIACL", "The New India Assurance Company Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="399", yfinance_ticker="NIACL.NS", segment="Financial Services"),
+    Instrument("RAMCOCEM", "The Ramco Cements Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="2043", yfinance_ticker="RAMCOCEM.NS", segment="Construction Materials"),
+    Instrument("THERMAX", "Thermax Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="3475", yfinance_ticker="THERMAX.NS", segment="Capital Goods"),
+    Instrument("TIMKEN", "Timken India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="14198", yfinance_ticker="TIMKEN.NS", segment="Capital Goods"),
+    Instrument("TITAGARH", "Titagarh Rail Systems Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="15414", yfinance_ticker="TITAGARH.NS", segment="Capital Goods"),
+    Instrument("TITAN", "Titan Company Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="3506", yfinance_ticker="TITAN.NS", segment="Consumer Durables"),
+    Instrument("TORNTPHARM", "Torrent Pharmaceuticals Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="3518", yfinance_ticker="TORNTPHARM.NS", segment="Healthcare"),
+    Instrument("TORNTPOWER", "Torrent Power Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="13786", yfinance_ticker="TORNTPOWER.NS", segment="Power"),
+    Instrument("TARIL", "Transformers And Rectifiers (India) Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="15174", yfinance_ticker="TARIL.NS", segment="Capital Goods"),
+    Instrument("TRENT", "Trent Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1964", yfinance_ticker="TRENT.NS", segment="Consumer Services"),
+    Instrument("TRIDENT", "Trident Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="9685", yfinance_ticker="TRIDENT.NS", segment="Textiles"),
+    Instrument("TRIVENI", "Triveni Engineering & Industries Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="13081", yfinance_ticker="TRIVENI.NS", segment="Fast Moving Consumer Goods"),
+    Instrument("TRITURBINE", "Triveni Turbine Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="25584", yfinance_ticker="TRITURBINE.NS", segment="Capital Goods"),
+    Instrument("TIINDIA", "Tube Investments of India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="312", yfinance_ticker="TIINDIA.NS", segment="Automobile and Auto Components"),
+    Instrument("UCOBANK", "UCO Bank", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="11223", yfinance_ticker="UCOBANK.NS", segment="Financial Services"),
+    Instrument("UNOMINDA", "UNO Minda Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="14154", yfinance_ticker="UNOMINDA.NS", segment="Automobile and Auto Components"),
+    Instrument("UPL", "UPL Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="11287", yfinance_ticker="UPL.NS", segment="Chemicals"),
+    Instrument("UTIAMC", "UTI Asset Management Company Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="527", yfinance_ticker="UTIAMC.NS", segment="Financial Services"),
+    Instrument("ULTRACEMCO", "UltraTech Cement Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="11532", yfinance_ticker="ULTRACEMCO.NS", segment="Construction Materials"),
+    Instrument("UNIONBANK", "Union Bank of India", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="10753", yfinance_ticker="UNIONBANK.NS", segment="Financial Services"),
+    Instrument("UBL", "United Breweries Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="16713", yfinance_ticker="UBL.NS", segment="Fast Moving Consumer Goods"),
+    Instrument("UNITDSPR", "United Spirits Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="10447", yfinance_ticker="UNITDSPR.NS", segment="Fast Moving Consumer Goods"),
+    Instrument("USHAMART", "Usha Martin Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="8840", yfinance_ticker="USHAMART.NS", segment="Capital Goods"),
+    Instrument("VGUARD", "V-Guard Industries Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="15362", yfinance_ticker="VGUARD.NS", segment="Consumer Durables"),
+    Instrument("DBREALTY", "Valor Estate Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="18124", yfinance_ticker="DBREALTY.NS", segment="Consumer Services"),
+    Instrument("VTL", "Vardhman Textiles Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="2073", yfinance_ticker="VTL.NS", segment="Textiles"),
+    Instrument("VBL", "Varun Beverages Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="18921", yfinance_ticker="VBL.NS", segment="Fast Moving Consumer Goods"),
+    Instrument("MANYAVAR", "Vedant Fashions Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="8167", yfinance_ticker="MANYAVAR.NS", segment="Consumer Services"),
+    Instrument("VEDL", "Vedanta Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="3063", yfinance_ticker="VEDL.NS", segment="Metals & Mining"),
+    Instrument("VENTIVE", "Ventive Hospitality Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="28847", yfinance_ticker="VENTIVE.NS", segment="Consumer Services"),
+    Instrument("VIJAYA", "Vijaya Diagnostic Centre Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="5585", yfinance_ticker="VIJAYA.NS", segment="Healthcare"),
+    Instrument("VMM", "Vishal Mega Mart Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="27969", yfinance_ticker="VMM.NS", segment="Consumer Services"),
+    Instrument("IDEA", "Vodafone Idea Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="14366", yfinance_ticker="IDEA.NS", segment="Telecommunication"),
+    Instrument("VOLTAS", "Voltas Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="3718", yfinance_ticker="VOLTAS.NS", segment="Consumer Durables"),
+    Instrument("WAAREEENER", "Waaree Energies Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="25907", yfinance_ticker="WAAREEENER.NS", segment="Capital Goods"),
+    Instrument("WELCORP", "Welspun Corp Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="11821", yfinance_ticker="WELCORP.NS", segment="Capital Goods"),
+    Instrument("WELSPUNLIV", "Welspun Living Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="11253", yfinance_ticker="WELSPUNLIV.NS", segment="Textiles"),
+    Instrument("WHIRLPOOL", "Whirlpool of India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="18011", yfinance_ticker="WHIRLPOOL.NS", segment="Consumer Durables"),
+    Instrument("WIPRO", "Wipro Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="3787", yfinance_ticker="WIPRO.NS", segment="Information Technology"),
+    Instrument("WOCKPHARMA", "Wockhardt Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="7506", yfinance_ticker="WOCKPHARMA.NS", segment="Healthcare"),
+    Instrument("YESBANK", "Yes Bank Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="11915", yfinance_ticker="YESBANK.NS", segment="Financial Services"),
+    Instrument("ZFCVINDIA", "ZF Commercial Vehicle Control Systems India Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="16915", yfinance_ticker="ZFCVINDIA.NS", segment="Automobile and Auto Components"),
+    Instrument("ZEEL", "Zee Entertainment Enterprises Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="3812", yfinance_ticker="ZEEL.NS", segment="Media Entertainment & Publication"),
+    Instrument("ZENTEC", "Zen Technologies Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="7508", yfinance_ticker="ZENTEC.NS", segment="Capital Goods"),
+    Instrument("ZENSARTECH", "Zensar Technolgies Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1076", yfinance_ticker="ZENSARTECH.NS", segment="Information Technology"),
+    Instrument("ZYDUSLIFE", "Zydus Lifesciences Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="7929", yfinance_ticker="ZYDUSLIFE.NS", segment="Healthcare"),
+    Instrument("ECLERX", "eClerx Services Ltd.", AssetClass.EQUITY, Exchange.NSE, dhan_security_id="15179", yfinance_ticker="ECLERX.NS", segment="Services"),]
+
+# Convenience aliases for backward compatibility
+NIFTY50_STOCKS     = [i for i in NIFTY500_STOCKS if i.symbol in {
+    "RELIANCE","TCS","HDFCBANK","INFY","ICICIBANK","HINDUNILVR","ITC","SBIN",
+    "BHARTIARTL","KOTAKBANK","LT","HCLTECH","AXISBANK","WIPRO","MARUTI",
+    "SUNPHARMA","TATAMOTORS","TATASTEEL","NESTLEIND","POWERGRID","NTPC","ONGC",
+    "COALINDIA","JSWSTEEL","BAJFINANCE","BAJAJFINSV","HDFCLIFE","SBILIFE",
+    "TECHM","ULTRACEMCO","TITAN","ASIANPAINT","DRREDDY","CIPLA","DIVISLAB",
+    "APOLLOHOSP","ADANIPORTS","ADANIENT","GRASIM","INDUSINDBK","BPCL",
+    "EICHERMOT","HEROMOTOCO","TATACONSUM","BRITANNIA","M&M","SHREECEM",
+    "BAJAJ-AUTO","HINDALCO","VEDL",
+}]
+
+NIFTY_NEXT50_STOCKS = [i for i in NIFTY500_STOCKS if i.symbol in {
+    "ZOMATO","PAYTM","NYKAA","DMART","IRCTC","HAL","BEL","ICICIGI",
+    "PIDILITIND","SIEMENS","ABB","TRENT","MUTHOOTFIN","POLYCAB","GODREJCP",
+    "MARICO","COLPAL","DABUR","UNITDSPR","INDIGO",
+}]
+
+# ─────────────────────────────────────────────────────────────────
+# BROAD INDICES
 # ─────────────────────────────────────────────────────────────────
 BROAD_INDICES = [
-    Instrument("NIFTY",       "Nifty 50",            AssetClass.INDEX, Exchange.NSE, yfinance_ticker="^NSEI",    segment="Broad"),
-    Instrument("BANKNIFTY",   "Nifty Bank",          AssetClass.INDEX, Exchange.NSE, yfinance_ticker="^NSEBANK", segment="Banking"),
-    Instrument("FINNIFTY",    "Nifty Financial Svcs",AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_FIN_SERVICE.NS", segment="Financials"),
-    Instrument("MIDCPNIFTY",  "Nifty Midcap 50",     AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_MID_SELECT.NS", segment="Midcap"),
-    Instrument("NIFTY100",    "Nifty 100",           AssetClass.INDEX, Exchange.NSE, yfinance_ticker="^CNX100",  segment="Broad"),
-    Instrument("NIFTY200",    "Nifty 200",           AssetClass.INDEX, Exchange.NSE, yfinance_ticker="^CNX200",  segment="Broad"),
-    Instrument("NIFTY500",    "Nifty 500",           AssetClass.INDEX, Exchange.NSE, yfinance_ticker="^CNX500",  segment="Broad"),
-    Instrument("NIFTYMIDCAP", "Nifty Midcap 100",    AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_MIDCAP_100.NS", segment="Midcap"),
-    Instrument("NIFTYSMALLCAP","Nifty Smallcap 100", AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_SMLCAP_100.NS", segment="Smallcap"),
-    Instrument("INDIA_VIX",   "India VIX",           AssetClass.INDEX, Exchange.NSE, yfinance_ticker="^INDIAVIX", segment="Volatility"),
+    Instrument("NIFTY",        "Nifty 50",             AssetClass.INDEX, Exchange.NSE, yfinance_ticker="^NSEI",     segment="Broad"),
+    Instrument("BANKNIFTY",    "Nifty Bank",            AssetClass.INDEX, Exchange.NSE, yfinance_ticker="^NSEBANK",  segment="Banking"),
+    Instrument("FINNIFTY",     "Nifty Financial Svcs",  AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_FIN_SERVICE.NS", segment="Financials"),
+    Instrument("MIDCPNIFTY",   "Nifty Midcap 50",       AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_MID_SELECT.NS", segment="Midcap"),
+    Instrument("NIFTY100",     "Nifty 100",             AssetClass.INDEX, Exchange.NSE, yfinance_ticker="^CNX100",   segment="Broad"),
+    Instrument("NIFTY200",     "Nifty 200",             AssetClass.INDEX, Exchange.NSE, yfinance_ticker="^CNX200",   segment="Broad"),
+    Instrument("NIFTY500",     "Nifty 500",             AssetClass.INDEX, Exchange.NSE, yfinance_ticker="^CNX500",   segment="Broad"),
+    Instrument("NIFTYMIDCAP",  "Nifty Midcap 100",      AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_MIDCAP_100.NS", segment="Midcap"),
+    Instrument("NIFTYSMALLCAP","Nifty Smallcap 100",    AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_SMLCAP_100.NS", segment="Smallcap"),
+    Instrument("INDIA_VIX",    "India VIX",             AssetClass.INDEX, Exchange.NSE, yfinance_ticker="^INDIAVIX",  segment="Volatility"),
 ]
 
 # ─────────────────────────────────────────────────────────────────
 # SECTORAL INDICES
 # ─────────────────────────────────────────────────────────────────
 SECTORAL_INDICES = [
-    Instrument("NIFTYIT",     "Nifty IT",            AssetClass.INDEX, Exchange.NSE, yfinance_ticker="^CNXIT",   segment="IT"),
-    Instrument("NIFTYPHARMA", "Nifty Pharma",        AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_PHARMA.NS", segment="Pharma"),
-    Instrument("NIFTYAUTO",   "Nifty Auto",          AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_AUTO.NS", segment="Auto"),
-    Instrument("NIFTYFMCG",   "Nifty FMCG",          AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_FMCG.NS", segment="FMCG"),
-    Instrument("NIFTYMETAL",  "Nifty Metal",         AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_METAL.NS", segment="Metal"),
-    Instrument("NIFTYENERGY", "Nifty Energy",        AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_ENERGY.NS", segment="Energy"),
-    Instrument("NIFTYREALTY", "Nifty Realty",        AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_REALTY.NS", segment="Realty"),
-    Instrument("NIFTYINFRA",  "Nifty Infra",         AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_INFRA.NS", segment="Infra"),
-    Instrument("NIFTYPSUBANK","Nifty PSU Bank",      AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_PSU_BANK.NS", segment="PSU Banking"),
-    Instrument("NIFTYMEDIUM", "Nifty Midcap Select", AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_MID_SELECT.NS", segment="Midcap"),
-    Instrument("NIFTYDEFENCE","Nifty India Defence", AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_INDIA_DEFENCE.NS", segment="Defence"),
-    Instrument("NIFTYHEALTHCARE","Nifty Healthcare",  AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_HEALTHCARE.NS", segment="Healthcare"),
-]
-
-# ─────────────────────────────────────────────────────────────────
-# NIFTY 50 CONSTITUENTS (F&O eligible, most liquid)
-# ─────────────────────────────────────────────────────────────────
-NIFTY50_STOCKS = [
-    Instrument("RELIANCE",  "Reliance Industries",  AssetClass.EQUITY, Exchange.NSE, dhan_security_id="2885",  yfinance_ticker="RELIANCE.NS",  lot_size=250,  segment="Energy"),
-    Instrument("TCS",       "Tata Consultancy",     AssetClass.EQUITY, Exchange.NSE, dhan_security_id="11536", yfinance_ticker="TCS.NS",       lot_size=150,  segment="IT"),
-    Instrument("HDFCBANK",  "HDFC Bank",            AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1333",  yfinance_ticker="HDFCBANK.NS",  lot_size=550,  segment="Banking"),
-    Instrument("INFY",      "Infosys",              AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1594",  yfinance_ticker="INFY.NS",      lot_size=400,  segment="IT"),
-    Instrument("ICICIBANK", "ICICI Bank",           AssetClass.EQUITY, Exchange.NSE, dhan_security_id="4963",  yfinance_ticker="ICICIBANK.NS", lot_size=700,  segment="Banking"),
-    Instrument("HINDUNILVR","Hindustan Unilever",   AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1394",  yfinance_ticker="HINDUNILVR.NS",lot_size=300,  segment="FMCG"),
-    Instrument("ITC",       "ITC Ltd",              AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1660",  yfinance_ticker="ITC.NS",       lot_size=1600, segment="FMCG"),
-    Instrument("SBIN",      "State Bank of India",  AssetClass.EQUITY, Exchange.NSE, dhan_security_id="3045",  yfinance_ticker="SBIN.NS",      lot_size=1500, segment="Banking"),
-    Instrument("BHARTIARTL","Bharti Airtel",        AssetClass.EQUITY, Exchange.NSE, dhan_security_id="10604", yfinance_ticker="BHARTIARTL.NS",lot_size=500,  segment="Telecom"),
-    Instrument("KOTAKBANK", "Kotak Mahindra Bank",  AssetClass.EQUITY, Exchange.NSE, dhan_security_id="1922",  yfinance_ticker="KOTAKBANK.NS", lot_size=400,  segment="Banking"),
-    Instrument("LT",        "Larsen & Toubro",      AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="LT.NS",        lot_size=150,  segment="Infra"),
-    Instrument("HCLTECH",   "HCL Technologies",     AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="HCLTECH.NS",   lot_size=350,  segment="IT"),
-    Instrument("AXISBANK",  "Axis Bank",            AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="AXISBANK.NS",  lot_size=625,  segment="Banking"),
-    Instrument("WIPRO",     "Wipro",                AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="WIPRO.NS",     lot_size=1500, segment="IT"),
-    Instrument("MARUTI",    "Maruti Suzuki",        AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="MARUTI.NS",    lot_size=100,  segment="Auto"),
-    Instrument("SUNPHARMA", "Sun Pharmaceutical",   AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="SUNPHARMA.NS", lot_size=350,  segment="Pharma"),
-    Instrument("TATAMOTORS","Tata Motors",          AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="TATAMOTORS.NS",lot_size=1400, segment="Auto"),
-    Instrument("TATASTEEL", "Tata Steel",           AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="TATASTEEL.NS", lot_size=5500, segment="Metal"),
-    Instrument("NESTLEIND", "Nestle India",         AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="NESTLEIND.NS", lot_size=40,   segment="FMCG"),
-    Instrument("POWERGRID", "Power Grid",           AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="POWERGRID.NS", lot_size=2700, segment="Energy"),
-    Instrument("NTPC",      "NTPC Ltd",             AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="NTPC.NS",      lot_size=2250, segment="Energy"),
-    Instrument("ONGC",      "ONGC",                 AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="ONGC.NS",      lot_size=1925, segment="Energy"),
-    Instrument("COALINDIA", "Coal India",           AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="COALINDIA.NS", lot_size=1400, segment="Metal"),
-    Instrument("JSWSTEEL",  "JSW Steel",            AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="JSWSTEEL.NS",  lot_size=600,  segment="Metal"),
-    Instrument("BAJFINANCE","Bajaj Finance",        AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="BAJFINANCE.NS",lot_size=125,  segment="Financials"),
-    Instrument("BAJAJFINSV","Bajaj Finserv",        AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="BAJAJFINSV.NS",lot_size=500,  segment="Financials"),
-    Instrument("HDFCLIFE",  "HDFC Life Insurance",  AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="HDFCLIFE.NS",  lot_size=1100, segment="Financials"),
-    Instrument("SBILIFE",   "SBI Life Insurance",   AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="SBILIFE.NS",   lot_size=750,  segment="Financials"),
-    Instrument("TECHM",     "Tech Mahindra",        AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="TECHM.NS",     lot_size=600,  segment="IT"),
-    Instrument("ULTRACEMCO","UltraTech Cement",     AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="ULTRACEMCO.NS",lot_size=100,  segment="Infra"),
-    Instrument("TITAN",     "Titan Company",        AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="TITAN.NS",     lot_size=375,  segment="Consumer"),
-    Instrument("ASIANPAINT","Asian Paints",         AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="ASIANPAINT.NS",lot_size=300,  segment="Consumer"),
-    Instrument("DRREDDY",   "Dr Reddy's Labs",      AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="DRREDDY.NS",   lot_size=125,  segment="Pharma"),
-    Instrument("CIPLA",     "Cipla",                AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="CIPLA.NS",     lot_size=650,  segment="Pharma"),
-    Instrument("DIVISLAB",  "Divi's Laboratories",  AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="DIVISLAB.NS",  lot_size=200,  segment="Pharma"),
-    Instrument("APOLLOHOSP","Apollo Hospitals",     AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="APOLLOHOSP.NS",lot_size=125,  segment="Healthcare"),
-    Instrument("ADANIPORTS","Adani Ports",          AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="ADANIPORTS.NS",lot_size=600,  segment="Infra"),
-    Instrument("ADANIENT",  "Adani Enterprises",    AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="ADANIENT.NS",  lot_size=250,  segment="Conglomerate"),
-    Instrument("GRASIM",    "Grasim Industries",    AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="GRASIM.NS",    lot_size=475,  segment="Diversified"),
-    Instrument("INDUSINDBK","IndusInd Bank",        AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="INDUSINDBK.NS",lot_size=500,  segment="Banking"),
-    Instrument("BPCL",      "BPCL",                 AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="BPCL.NS",      lot_size=1800, segment="Energy"),
-    Instrument("EICHERMOT", "Eicher Motors",        AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="EICHERMOT.NS", lot_size=175,  segment="Auto"),
-    Instrument("HEROMOTOCO","Hero MotoCorp",        AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="HEROMOTOCO.NS",lot_size=300,  segment="Auto"),
-    Instrument("TATACONSUM","Tata Consumer Products",AssetClass.EQUITY,Exchange.NSE, yfinance_ticker="TATACONSUM.NS",lot_size=875,  segment="FMCG"),
-    Instrument("BRITANNIA", "Britannia Industries", AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="BRITANNIA.NS", lot_size=200,  segment="FMCG"),
-    Instrument("M&M",       "Mahindra & Mahindra",  AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="M&M.NS",       lot_size=700,  segment="Auto"),
-    Instrument("SHREECEM",  "Shree Cement",         AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="SHREECEM.NS",  lot_size=25,   segment="Infra"),
-    Instrument("BAJAJ-AUTO","Bajaj Auto",           AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="BAJAJ-AUTO.NS",lot_size=250,  segment="Auto"),
-    Instrument("HINDALCO",  "Hindalco Industries",  AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="HINDALCO.NS",  lot_size=1400, segment="Metal"),
-    Instrument("VEDL",      "Vedanta",              AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="VEDL.NS",      lot_size=2500, segment="Metal"),
-]
-
-# ─────────────────────────────────────────────────────────────────
-# NIFTY NEXT 50 (high-growth mid-large caps)
-# ─────────────────────────────────────────────────────────────────
-NIFTY_NEXT50_STOCKS = [
-    Instrument("ZOMATO",    "Zomato",               AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="ZOMATO.NS",   lot_size=3750, segment="Consumer Tech"),
-    Instrument("PAYTM",     "One97 Communications", AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="PAYTM.NS",    lot_size=2000, segment="Fintech"),
-    Instrument("NYKAA",     "FSN E-Commerce (Nykaa)",AssetClass.EQUITY,Exchange.NSE, yfinance_ticker="NYKAA.NS",    lot_size=4600, segment="Consumer Tech"),
-    Instrument("DMART",     "Avenue Supermarts",    AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="DMART.NS",    lot_size=75,   segment="Retail"),
-    Instrument("IRCTC",     "IRCTC",                AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="IRCTC.NS",    lot_size=875,  segment="Travel"),
-    Instrument("HAL",       "Hindustan Aeronautics",AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="HAL.NS",      lot_size=150,  segment="Defence"),
-    Instrument("BEL",       "Bharat Electronics",   AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="BEL.NS",      lot_size=4800, segment="Defence"),
-    Instrument("ICICIGI",   "ICICI Lombard",        AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="ICICIGI.NS",  lot_size=400,  segment="Insurance"),
-    Instrument("PIDILITIND","Pidilite Industries",  AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="PIDILITIND.NS",lot_size=250, segment="Chemicals"),
-    Instrument("SIEMENS",   "Siemens India",        AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="SIEMENS.NS",  lot_size=125,  segment="Capital Goods"),
-    Instrument("ABB",       "ABB India",            AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="ABB.NS",      lot_size=150,  segment="Capital Goods"),
-    Instrument("TRENT",     "Trent",                AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="TRENT.NS",    lot_size=350,  segment="Retail"),
-    Instrument("MUTHOOTFIN","Muthoot Finance",      AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="MUTHOOTFIN.NS",lot_size=450, segment="Financials"),
-    Instrument("POLYCAB",   "Polycab India",        AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="POLYCAB.NS",  lot_size=250,  segment="Capital Goods"),
-    Instrument("GODREJCP",  "Godrej Consumer",      AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="GODREJCP.NS", lot_size=500,  segment="FMCG"),
-    Instrument("MARICO",    "Marico",               AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="MARICO.NS",   lot_size=1200, segment="FMCG"),
-    Instrument("COLPAL",    "Colgate Palmolive",    AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="COLPAL.NS",   lot_size=700,  segment="FMCG"),
-    Instrument("DABUR",     "Dabur India",          AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="DABUR.NS",    lot_size=1250, segment="FMCG"),
-    Instrument("MCDOWELL-N","United Spirits",       AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="MCDOWELL-N.NS",lot_size=500, segment="Consumer"),
-    Instrument("INDIGO",    "IndiGo (InterGlobe)",  AssetClass.EQUITY, Exchange.NSE, yfinance_ticker="INDIGO.NS",   lot_size=300,  segment="Aviation"),
+    Instrument("NIFTYIT",       "Nifty IT",             AssetClass.INDEX, Exchange.NSE, yfinance_ticker="^CNXIT",    segment="IT"),
+    Instrument("NIFTYPHARMA",   "Nifty Pharma",         AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_PHARMA.NS", segment="Pharma"),
+    Instrument("NIFTYAUTO",     "Nifty Auto",           AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_AUTO.NS", segment="Auto"),
+    Instrument("NIFTYFMCG",     "Nifty FMCG",           AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_FMCG.NS", segment="FMCG"),
+    Instrument("NIFTYMETAL",    "Nifty Metal",          AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_METAL.NS", segment="Metal"),
+    Instrument("NIFTYENERGY",   "Nifty Energy",         AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_ENERGY.NS", segment="Energy"),
+    Instrument("NIFTYREALTY",   "Nifty Realty",         AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_REALTY.NS", segment="Realty"),
+    Instrument("NIFTYINFRA",    "Nifty Infra",          AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_INFRA.NS", segment="Infra"),
+    Instrument("NIFTYPSUBANK",  "Nifty PSU Bank",       AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_PSU_BANK.NS", segment="PSU Banking"),
+    Instrument("NIFTYDEFENCE",  "Nifty India Defence",  AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_INDIA_DEFENCE.NS", segment="Defence"),
+    Instrument("NIFTYHEALTHCARE","Nifty Healthcare",    AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_HEALTHCARE.NS", segment="Healthcare"),
+    Instrument("NIFTYMEDIUM",   "Nifty Midcap Select",  AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_MID_SELECT.NS", segment="Midcap"),
 ]
 
 # ─────────────────────────────────────────────────────────────────
 # MCX COMMODITIES
 # ─────────────────────────────────────────────────────────────────
 COMMODITIES = [
-    Instrument("GOLD",      "Gold",                 AssetClass.COMMODITY, Exchange.MCX, yfinance_ticker="GC=F",  lot_size=100,  tick_size=1.0,  segment="Precious Metal"),
-    Instrument("SILVER",    "Silver",               AssetClass.COMMODITY, Exchange.MCX, yfinance_ticker="SI=F",  lot_size=30000,tick_size=1.0,  segment="Precious Metal"),
-    Instrument("CRUDEOIL",  "Crude Oil",            AssetClass.COMMODITY, Exchange.MCX, yfinance_ticker="CL=F",  lot_size=100,  tick_size=1.0,  segment="Energy"),
-    Instrument("NATURALGAS","Natural Gas",          AssetClass.COMMODITY, Exchange.MCX, yfinance_ticker="NG=F",  lot_size=1250, tick_size=0.1,  segment="Energy"),
-    Instrument("COPPER",    "Copper",               AssetClass.COMMODITY, Exchange.MCX, yfinance_ticker="HG=F",  lot_size=2500, tick_size=0.05, segment="Base Metal"),
-    Instrument("ALUMINIUM", "Aluminium",            AssetClass.COMMODITY, Exchange.MCX, yfinance_ticker="ALI=F", lot_size=5000, tick_size=0.05, segment="Base Metal"),
-    Instrument("ZINC",      "Zinc",                 AssetClass.COMMODITY, Exchange.MCX, yfinance_ticker="ZNC=F", lot_size=5000, tick_size=0.05, segment="Base Metal"),
-    Instrument("LEAD",      "Lead",                 AssetClass.COMMODITY, Exchange.MCX, yfinance_ticker="LE=F",  lot_size=5000, tick_size=0.05, segment="Base Metal"),
-    Instrument("NICKEL",    "Nickel",               AssetClass.COMMODITY, Exchange.MCX, yfinance_ticker="NI=F",  lot_size=1500, tick_size=0.1,  segment="Base Metal"),
-    Instrument("COTTON",    "Cotton",               AssetClass.COMMODITY, Exchange.MCX, yfinance_ticker="CT=F",  lot_size=25,   tick_size=10.0, segment="Agri"),
+    Instrument("GOLD",       "Gold",        AssetClass.COMMODITY, Exchange.MCX, yfinance_ticker="GC=F",  lot_size=100,   tick_size=1.0,  segment="Precious Metal"),
+    Instrument("SILVER",     "Silver",      AssetClass.COMMODITY, Exchange.MCX, yfinance_ticker="SI=F",  lot_size=30000, tick_size=1.0,  segment="Precious Metal"),
+    Instrument("CRUDEOIL",   "Crude Oil",   AssetClass.COMMODITY, Exchange.MCX, yfinance_ticker="CL=F",  lot_size=100,   tick_size=1.0,  segment="Energy"),
+    Instrument("NATURALGAS", "Natural Gas", AssetClass.COMMODITY, Exchange.MCX, yfinance_ticker="NG=F",  lot_size=1250,  tick_size=0.1,  segment="Energy"),
+    Instrument("COPPER",     "Copper",      AssetClass.COMMODITY, Exchange.MCX, yfinance_ticker="HG=F",  lot_size=2500,  tick_size=0.05, segment="Base Metal"),
+    Instrument("ALUMINIUM",  "Aluminium",   AssetClass.COMMODITY, Exchange.MCX, yfinance_ticker="ALI=F", lot_size=5000,  tick_size=0.05, segment="Base Metal"),
+    Instrument("ZINC",       "Zinc",        AssetClass.COMMODITY, Exchange.MCX, yfinance_ticker="ZNC=F", lot_size=5000,  tick_size=0.05, segment="Base Metal"),
+    Instrument("LEAD",       "Lead",        AssetClass.COMMODITY, Exchange.MCX, yfinance_ticker="LE=F",  lot_size=5000,  tick_size=0.05, segment="Base Metal"),
+    Instrument("NICKEL",     "Nickel",      AssetClass.COMMODITY, Exchange.MCX, yfinance_ticker="NI=F",  lot_size=1500,  tick_size=0.1,  segment="Base Metal"),
+    Instrument("COTTON",     "Cotton",      AssetClass.COMMODITY, Exchange.MCX, yfinance_ticker="CT=F",  lot_size=25,    tick_size=10.0, segment="Agri"),
 ]
 
 # ─────────────────────────────────────────────────────────────────
-# LIQUID ETFs (trade like equities, index exposure)
+# LIQUID ETFs
 # ─────────────────────────────────────────────────────────────────
 LIQUID_ETFS = [
-    Instrument("NIFTYBEES",  "Nippon Nifty BeES ETF",   AssetClass.ETF, Exchange.NSE, yfinance_ticker="NIFTYBEES.NS",  segment="Broad"),
-    Instrument("BANKBEES",   "Nippon Bank BeES ETF",    AssetClass.ETF, Exchange.NSE, yfinance_ticker="BANKBEES.NS",   segment="Banking"),
-    Instrument("GOLDBEES",   "Nippon Gold BeES ETF",    AssetClass.ETF, Exchange.NSE, yfinance_ticker="GOLDBEES.NS",   segment="Gold"),
-    Instrument("JUNIORBEES", "Nippon Junior BeES ETF",  AssetClass.ETF, Exchange.NSE, yfinance_ticker="JUNIORBEES.NS", segment="Midcap"),
-    Instrument("ITBEES",     "Nippon IT BeES ETF",      AssetClass.ETF, Exchange.NSE, yfinance_ticker="ITBEES.NS",     segment="IT"),
-    Instrument("CPSEETF",    "CPSE ETF",                AssetClass.ETF, Exchange.NSE, yfinance_ticker="CPSEETF.NS",    segment="PSU"),
+    Instrument("NIFTYBEES",  "Nippon Nifty BeES ETF",  AssetClass.ETF, Exchange.NSE, yfinance_ticker="NIFTYBEES.NS",  segment="Broad"),
+    Instrument("BANKBEES",   "Nippon Bank BeES ETF",   AssetClass.ETF, Exchange.NSE, yfinance_ticker="BANKBEES.NS",   segment="Banking"),
+    Instrument("GOLDBEES",   "Nippon Gold BeES ETF",   AssetClass.ETF, Exchange.NSE, yfinance_ticker="GOLDBEES.NS",   segment="Gold"),
+    Instrument("JUNIORBEES", "Nippon Junior BeES ETF", AssetClass.ETF, Exchange.NSE, yfinance_ticker="JUNIORBEES.NS", segment="Midcap"),
+    Instrument("ITBEES",     "Nippon IT BeES ETF",     AssetClass.ETF, Exchange.NSE, yfinance_ticker="ITBEES.NS",     segment="IT"),
+    Instrument("CPSEETF",    "CPSE ETF",               AssetClass.ETF, Exchange.NSE, yfinance_ticker="CPSEETF.NS",    segment="PSU"),
 ]
 
 
 def get_equity_universe() -> list[Instrument]:
-    return NIFTY50_STOCKS + NIFTY_NEXT50_STOCKS
+    return NIFTY500_STOCKS
 
 
 def get_index_universe() -> list[Instrument]:
@@ -216,7 +649,6 @@ def get_commodity_universe() -> list[Instrument]:
 
 
 def get_fno_universe() -> list[Instrument]:
-    """F&O eligible: Nifty 50 stocks + major indices."""
     return NIFTY50_STOCKS + [
         i for i in BROAD_INDICES if i.symbol in ("NIFTY", "BANKNIFTY", "FINNIFTY", "MIDCPNIFTY")
     ]
@@ -227,18 +659,11 @@ def get_etf_universe() -> list[Instrument]:
 
 
 def get_full_universe() -> list[Instrument]:
-    return (
-        get_equity_universe()
-        + get_index_universe()
-        + get_commodity_universe()
-        + get_etf_universe()
-    )
+    return get_equity_universe() + get_index_universe() + get_commodity_universe() + get_etf_universe()
 
 
 def get_universe_by_segment(segment: str) -> list[Instrument]:
     return [i for i in get_full_universe() if i.segment == segment]
 
 
-ALL_SEGMENTS = sorted(set(
-    i.segment for i in get_full_universe() if i.segment
-))
+ALL_SEGMENTS = sorted(set(i.segment for i in get_full_universe() if i.segment))
