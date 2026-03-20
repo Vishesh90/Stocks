@@ -87,16 +87,55 @@ def download_instrument(instrument, interval: str, years: int = 5) -> bool:
 
 def main():
     parser = argparse.ArgumentParser(description="Bulk data downloader for backtesting")
-    parser.add_argument("--interval", default="5m",      help="Data interval: 5m, 1m, 15m (default: 5m)")
-    parser.add_argument("--delay",    type=float, default=0.35, help="Delay between instruments in seconds (default: 0.35)")
+    parser.add_argument("--interval", default="1m",       help="Data interval: 1m, 5m, 15m (default: 1m)")
+    parser.add_argument("--output",   default=None,        help="Custom folder to store data e.g. D:/StocksData or /mnt/d/StocksData")
+    parser.add_argument("--delay",    type=float, default=0.35, help="Delay between requests in seconds (default: 0.35)")
     parser.add_argument("--resume",   action="store_true", help="Skip already-downloaded instruments")
-    parser.add_argument("--nifty50",  action="store_true", help="Nifty 50 only")
-    parser.add_argument("--nifty100", action="store_true", help="Nifty 50 + Next 50 only")
+    parser.add_argument("--nifty50",  action="store_true", help="Nifty 50 only (50 instruments)")
+    parser.add_argument("--nifty100", action="store_true", help="Nifty 50 + Next 50 (100 instruments)")
     parser.add_argument("--years",    type=int, default=5, help="Years of history (default: 5)")
     args = parser.parse_args()
 
+    # ── SET CUSTOM OUTPUT DIR ─────────────────────────────────────────────────
+    if args.output:
+        import os
+        custom_dir = Path(args.output)
+        custom_dir.mkdir(parents=True, exist_ok=True)
+        os.environ["DATA_CACHE_DIR"] = str(custom_dir)
+        # Reload settings with new path
+        from config import settings as _settings_module
+        from config.settings import Settings
+        import config.settings as _cfg
+        _cfg.settings = Settings()
+        from config.settings import settings
+        console.print(f"[green]Output directory: {custom_dir.resolve()}[/green]")
+    else:
+        from config.settings import settings
+        console.print(f"[green]Output directory: {Path('data/cache').resolve()}[/green]")
+
     console.rule(f"[bold cyan]Columnly Stocks — Data Downloader[/bold cyan]")
     console.print(f"[yellow]Interval: {args.interval} | Delay: {args.delay}s | Years: {args.years}[/yellow]")
+
+    # ── SET CUSTOM OUTPUT DIR ─────────────────────────────────────────────────
+    if args.output:
+        import os
+        custom_dir = Path(args.output)
+        custom_dir.mkdir(parents=True, exist_ok=True)
+        os.environ["DATA_CACHE_DIR"] = str(custom_dir)
+        # Reload settings with new path
+        from config import settings as _settings_module
+        from config.settings import Settings
+        import config.settings as _cfg
+        _cfg.settings = Settings()
+        from config.settings import settings
+        console.print(f"[green]Output directory: {custom_dir.resolve()}[/green]")
+    else:
+        from config.settings import settings
+        console.print(f"[green]Output directory: {Path('data/cache').resolve()}[/green]")
+
+    # Progress file lives inside the output folder
+    cache_root = Path(args.output) if args.output else Path("data/cache")
+    progress_file = cache_root / "download_progress.json"
 
     # ── SELECT UNIVERSE ───────────────────────────────────────────────────────
     if args.nifty50:
@@ -114,8 +153,10 @@ def main():
         console.print(f"[green]Mode: Full universe ({len(instruments)} instruments)[/green]")
 
     # ── RESUME LOGIC ──────────────────────────────────────────────────────────
-    completed = load_progress() if args.resume else set()
-    if completed:
+    completed = set()
+    if args.resume and progress_file.exists():
+        data = json.loads(progress_file.read_text())
+        completed = set(data.get("completed", []))
         console.print(f"[cyan]Resuming: {len(completed)} already downloaded, skipping them[/cyan]")
 
     remaining = [i for i in instruments if i.symbol not in completed]
@@ -159,7 +200,9 @@ def main():
                 failed_symbols.append(symbol)
 
             # Save progress after every instrument — crash-safe
-            save_progress(completed)
+            completed.add(symbol) if ok else None
+            progress_file.parent.mkdir(parents=True, exist_ok=True)
+            progress_file.write_text(json.dumps({"completed": list(completed)}))
             progress.advance(task)
 
             # Rate limit protection
@@ -190,7 +233,7 @@ def main():
         console.print(f"  python scripts/run_backtest.py --interval {args.interval}")
         # Clean up progress file on full success
         if fail_count == 0:
-            PROGRESS_FILE.unlink(missing_ok=True)
+            progress_file.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":
