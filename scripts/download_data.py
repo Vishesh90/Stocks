@@ -19,14 +19,15 @@ DATA SOURCE:
 RATE LIMIT:
     Dhan API limit: 10 req/s.
     We sleep 0.125s between each batch call = 8 req/s = 80% of limit.
-    Each instrument = ~22 batches (5yr ÷ 85-day windows).
-    536 instruments × 22 batches × 0.125s = ~25 minutes total.
+    Each instrument = ~22 batches (5yr / 85-day windows).
+    536 instruments x 22 batches x (0.125s sleep + ~1.5s response) = ~5-7 hours.
 
 STORAGE:
-    1m data: ~250MB per instrument × 536 = ~134GB total on disk.
+    1m data: ~250MB per instrument x 536 = ~134GB total on disk.
 """
 
 import sys
+import os
 import argparse
 import time
 import json
@@ -34,6 +35,11 @@ from pathlib import Path
 from datetime import datetime, timedelta
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
+# Load .env FIRST — before any other imports that read settings
+from dotenv import load_dotenv
+env_path = Path(__file__).parent.parent / ".env"
+load_dotenv(dotenv_path=env_path, override=True)
 
 from loguru import logger
 from rich.console import Console
@@ -72,34 +78,46 @@ def download_instrument(instrument, interval: str, years: int = 5) -> bool:
 
 def main():
     parser = argparse.ArgumentParser(description="Bulk data downloader for backtesting")
-    parser.add_argument("--interval", default="1m",            help="Data interval: 1m, 5m, 15m (default: 1m)")
-    parser.add_argument("--output",   default=None,            help='Custom folder e.g. "F:\\Stocks\\1m Nifty 500 stock data"')
-    parser.add_argument("--resume",   action="store_true",     help="Skip already-downloaded instruments")
-    parser.add_argument("--nifty50",  action="store_true",     help="Nifty 50 only (50 instruments, quick test)")
-    parser.add_argument("--nifty100", action="store_true",     help="Nifty 50 + Next 50 (100 instruments)")
-    parser.add_argument("--years",    type=int, default=5,     help="Years of history to download (default: 5)")
+    parser.add_argument("--interval", default="1m",        help="Data interval: 1m, 5m, 15m (default: 1m)")
+    parser.add_argument("--output",   default=None,        help='Custom folder e.g. "F:\\Stocks\\1m Nifty 500 stock data"')
+    parser.add_argument("--resume",   action="store_true", help="Skip already-downloaded instruments")
+    parser.add_argument("--nifty50",  action="store_true", help="Nifty 50 only (50 instruments, quick test)")
+    parser.add_argument("--nifty100", action="store_true", help="Nifty 50 + Next 50 (100 instruments)")
+    parser.add_argument("--years",    type=int, default=5, help="Years of history to download (default: 5)")
     args = parser.parse_args()
 
+    # ── VALIDATE DHAN CREDENTIALS ─────────────────────────────────────────────
+    dhan_token = os.environ.get("DHAN_ACCESS_TOKEN", "").strip()
+    dhan_id    = os.environ.get("DHAN_CLIENT_ID", "").strip()
+
+    if not dhan_token or not dhan_id:
+        console.print("\n[bold red]ERROR: Dhan credentials not found.[/bold red]")
+        console.print(f"[red]Looked for .env at: {env_path.resolve()}[/red]")
+        console.print("\n[yellow]Create a file called  .env  in this folder:[/yellow]")
+        console.print(f"[yellow]  {env_path.parent.resolve()}[/yellow]")
+        console.print("\n[yellow]With exactly these two lines:[/yellow]")
+        console.print("  DHAN_CLIENT_ID=your_client_id_here")
+        console.print("  DHAN_ACCESS_TOKEN=your_full_jwt_token_here")
+        console.print("\n[dim]Get your token from: https://web.dhan.co/access-token[/dim]")
+        sys.exit(1)
+
+    # Patch the settings singleton so fetcher picks up credentials
+    from config.settings import settings
+    object.__setattr__(settings, "dhan_access_token", dhan_token)
+    object.__setattr__(settings, "dhan_client_id",    dhan_id)
+
     # ── SET CUSTOM OUTPUT DIR ─────────────────────────────────────────────────
-    # Must happen BEFORE any import of fetcher internals so the patched
-    # settings.data_cache_dir is picked up by _cache_path().
     cache_root = Path(args.output) if args.output else Path("data/cache")
     cache_root.mkdir(parents=True, exist_ok=True)
-
-    if args.output:
-        import os
-        os.environ["DATA_CACHE_DIR"] = str(cache_root)
-        # Patch the already-instantiated settings singleton directly.
-        # object.__setattr__ bypasses Pydantic's frozen-field guard.
-        from config.settings import settings
-        object.__setattr__(settings, "data_cache_dir", cache_root)
+    os.environ["DATA_CACHE_DIR"] = str(cache_root)
+    object.__setattr__(settings, "data_cache_dir", cache_root)
 
     # ── HEADER ────────────────────────────────────────────────────────────────
     console.rule("[bold cyan]Columnly Stocks — Data Downloader[/bold cyan]")
-    console.print(f"[yellow]Interval: {args.interval} | Rate: 8 req/s (80% of Dhan limit) | Years: {args.years}[/yellow]")
+    console.print(f"[green]Dhan Client ID : {dhan_id}[/green]")
     console.print(f"[green]Output directory: {cache_root.resolve()}[/green]")
+    console.print(f"[yellow]Interval: {args.interval} | Rate: 8 req/s (80% of Dhan limit) | Years: {args.years}[/yellow]")
 
-    # Progress file lives inside the output folder
     progress_file = cache_root / "download_progress.json"
 
     # ── SELECT UNIVERSE ───────────────────────────────────────────────────────
@@ -137,10 +155,10 @@ def main():
 
     # ── TIME / STORAGE ESTIMATE ───────────────────────────────────────────────
     batches_per_instrument = max(1, int(args.years * 365 / 85) + 1)
-    BATCH_DELAY_S = 0.125  # 0.125s per batch = 8 req/s = 80% of Dhan's 10 req/s limit
-    est_seconds = len(remaining) * batches_per_instrument * BATCH_DELAY_S
+    # 0.125s sleep + ~1.5s avg response time per batch
+    est_seconds = len(remaining) * batches_per_instrument * (0.125 + 1.5)
     mb_per_instrument = 250 if args.interval == "1m" else 50
-    console.print(f"[dim]Estimated time  : {est_seconds / 3600:.1f} hours ({est_seconds / 60:.0f} minutes)[/dim]")
+    console.print(f"[dim]Estimated time  : {est_seconds / 3600:.1f} hours (based on ~1.5s avg response per batch)[/dim]")
     console.print(f"[dim]Storage estimate: ~{len(remaining) * mb_per_instrument // 1024}GB "
                   f"({len(remaining) * mb_per_instrument}MB)[/dim]\n")
 
