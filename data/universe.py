@@ -574,65 +574,65 @@ NIFTY_NEXT50_STOCKS = [i for i in NIFTY500_STOCKS if i.symbol in {
 }]
 
 # ─────────────────────────────────────────────────────────────────
-# BROAD INDICES
+# BROAD INDICES  (dhan_security_id = Dhan INDEX segment IDs)
 # ─────────────────────────────────────────────────────────────────
 BROAD_INDICES = [
-    Instrument("NIFTY",        "Nifty 50",             AssetClass.INDEX, Exchange.NSE, yfinance_ticker="^NSEI",     segment="Broad"),
-    Instrument("BANKNIFTY",    "Nifty Bank",            AssetClass.INDEX, Exchange.NSE, yfinance_ticker="^NSEBANK",  segment="Banking"),
-    Instrument("FINNIFTY",     "Nifty Financial Svcs",  AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_FIN_SERVICE.NS", segment="Financials"),
-    Instrument("MIDCPNIFTY",   "Nifty Midcap 50",       AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_MID_SELECT.NS", segment="Midcap"),
-    Instrument("NIFTY100",     "Nifty 100",             AssetClass.INDEX, Exchange.NSE, yfinance_ticker="^CNX100",   segment="Broad"),
-    Instrument("NIFTY200",     "Nifty 200",             AssetClass.INDEX, Exchange.NSE, yfinance_ticker="^CNX200",   segment="Broad"),
-    Instrument("NIFTY500",     "Nifty 500",             AssetClass.INDEX, Exchange.NSE, yfinance_ticker="^CNX500",   segment="Broad"),
-    Instrument("NIFTYMIDCAP",  "Nifty Midcap 100",      AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_MIDCAP_100.NS", segment="Midcap"),
-    Instrument("NIFTYSMALLCAP","Nifty Smallcap 100",    AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_SMLCAP_100.NS", segment="Smallcap"),
-    Instrument("INDIA_VIX",    "India VIX",             AssetClass.INDEX, Exchange.NSE, yfinance_ticker="^INDIAVIX",  segment="Volatility"),
+    Instrument("NIFTY",         "Nifty 50",           AssetClass.INDEX, Exchange.NSE, dhan_security_id="13",    segment="Broad"),
+    Instrument("BANKNIFTY",     "Nifty Bank",          AssetClass.INDEX, Exchange.NSE, dhan_security_id="25",    segment="Banking"),
+    Instrument("FINNIFTY",      "Nifty Fin Services",  AssetClass.INDEX, Exchange.NSE, dhan_security_id="27",    segment="Financials"),
+    Instrument("MIDCPNIFTY",    "Nifty Midcap 50",     AssetClass.INDEX, Exchange.NSE, dhan_security_id="442",   segment="Midcap"),
+    Instrument("NIFTY100",      "Nifty 100",           AssetClass.INDEX, Exchange.NSE, dhan_security_id="51",    segment="Broad"),
+    Instrument("NIFTY200",      "Nifty 200",           AssetClass.INDEX, Exchange.NSE, dhan_security_id="53",    segment="Broad"),
+    Instrument("NIFTY500",      "Nifty 500",           AssetClass.INDEX, Exchange.NSE, dhan_security_id="52",    segment="Broad"),
+    Instrument("NIFTYMIDCAP",   "Nifty Midcap 100",    AssetClass.INDEX, Exchange.NSE, dhan_security_id="14",    segment="Midcap"),
+    Instrument("NIFTYSMALLCAP", "Nifty Smallcap 100",  AssetClass.INDEX, Exchange.NSE, dhan_security_id="15",    segment="Smallcap"),
+    Instrument("INDIA_VIX",     "India VIX",           AssetClass.INDEX, Exchange.NSE, dhan_security_id="20",    segment="Volatility"),
 ]
 
 # ─────────────────────────────────────────────────────────────────
-# SECTORAL INDICES
+# SECTORAL INDICES  (dhan_security_id = Dhan INDEX segment IDs)
 # ─────────────────────────────────────────────────────────────────
 SECTORAL_INDICES = [
-    Instrument("NIFTYIT",       "Nifty IT",             AssetClass.INDEX, Exchange.NSE, yfinance_ticker="^CNXIT",    segment="IT"),
-    Instrument("NIFTYPHARMA",   "Nifty Pharma",         AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_PHARMA.NS", segment="Pharma"),
-    Instrument("NIFTYAUTO",     "Nifty Auto",           AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_AUTO.NS", segment="Auto"),
-    Instrument("NIFTYFMCG",     "Nifty FMCG",           AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_FMCG.NS", segment="FMCG"),
-    Instrument("NIFTYMETAL",    "Nifty Metal",          AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_METAL.NS", segment="Metal"),
-    Instrument("NIFTYENERGY",   "Nifty Energy",         AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_ENERGY.NS", segment="Energy"),
-    Instrument("NIFTYREALTY",   "Nifty Realty",         AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_REALTY.NS", segment="Realty"),
-    Instrument("NIFTYINFRA",    "Nifty Infra",          AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_INFRA.NS", segment="Infra"),
-    Instrument("NIFTYPSUBANK",  "Nifty PSU Bank",       AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_PSU_BANK.NS", segment="PSU Banking"),
-    Instrument("NIFTYDEFENCE",  "Nifty India Defence",  AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_INDIA_DEFENCE.NS", segment="Defence"),
-    Instrument("NIFTYHEALTHCARE","Nifty Healthcare",    AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_HEALTHCARE.NS", segment="Healthcare"),
-    Instrument("NIFTYMEDIUM",   "Nifty Midcap Select",  AssetClass.INDEX, Exchange.NSE, yfinance_ticker="NIFTY_MID_SELECT.NS", segment="Midcap"),
+    Instrument("NIFTYIT",        "Nifty IT",            AssetClass.INDEX, Exchange.NSE, dhan_security_id="11",   segment="IT"),
+    Instrument("NIFTYPHARMA",    "Nifty Pharma",        AssetClass.INDEX, Exchange.NSE, dhan_security_id="44",   segment="Pharma"),
+    Instrument("NIFTYAUTO",      "Nifty Auto",          AssetClass.INDEX, Exchange.NSE, dhan_security_id="43",   segment="Auto"),
+    Instrument("NIFTYFMCG",      "Nifty FMCG",          AssetClass.INDEX, Exchange.NSE, dhan_security_id="45",   segment="FMCG"),
+    Instrument("NIFTYMETAL",     "Nifty Metal",         AssetClass.INDEX, Exchange.NSE, dhan_security_id="46",   segment="Metal"),
+    Instrument("NIFTYENERGY",    "Nifty Energy",        AssetClass.INDEX, Exchange.NSE, dhan_security_id="47",   segment="Energy"),
+    Instrument("NIFTYREALTY",    "Nifty Realty",        AssetClass.INDEX, Exchange.NSE, dhan_security_id="48",   segment="Realty"),
+    Instrument("NIFTYINFRA",     "Nifty Infra",         AssetClass.INDEX, Exchange.NSE, dhan_security_id="49",   segment="Infra"),
+    Instrument("NIFTYPSUBANK",   "Nifty PSU Bank",      AssetClass.INDEX, Exchange.NSE, dhan_security_id="50",   segment="PSU Banking"),
+    Instrument("NIFTYDEFENCE",   "Nifty India Defence", AssetClass.INDEX, Exchange.NSE, dhan_security_id="454",  segment="Defence"),
+    Instrument("NIFTYHEALTHCARE","Nifty Healthcare",    AssetClass.INDEX, Exchange.NSE, dhan_security_id="455",  segment="Healthcare"),
+    Instrument("NIFTYMEDIUM",    "Nifty Midcap Select", AssetClass.INDEX, Exchange.NSE, dhan_security_id="442",  segment="Midcap"),
 ]
 
 # ─────────────────────────────────────────────────────────────────
-# MCX COMMODITIES
+# MCX COMMODITIES  (dhan_security_id = MCX continuous front-month IDs)
 # ─────────────────────────────────────────────────────────────────
 COMMODITIES = [
-    Instrument("GOLD",       "Gold",        AssetClass.COMMODITY, Exchange.MCX, yfinance_ticker="GC=F",  lot_size=100,   tick_size=1.0,  segment="Precious Metal"),
-    Instrument("SILVER",     "Silver",      AssetClass.COMMODITY, Exchange.MCX, yfinance_ticker="SI=F",  lot_size=30000, tick_size=1.0,  segment="Precious Metal"),
-    Instrument("CRUDEOIL",   "Crude Oil",   AssetClass.COMMODITY, Exchange.MCX, yfinance_ticker="CL=F",  lot_size=100,   tick_size=1.0,  segment="Energy"),
-    Instrument("NATURALGAS", "Natural Gas", AssetClass.COMMODITY, Exchange.MCX, yfinance_ticker="NG=F",  lot_size=1250,  tick_size=0.1,  segment="Energy"),
-    Instrument("COPPER",     "Copper",      AssetClass.COMMODITY, Exchange.MCX, yfinance_ticker="HG=F",  lot_size=2500,  tick_size=0.05, segment="Base Metal"),
-    Instrument("ALUMINIUM",  "Aluminium",   AssetClass.COMMODITY, Exchange.MCX, yfinance_ticker="ALI=F", lot_size=5000,  tick_size=0.05, segment="Base Metal"),
-    Instrument("ZINC",       "Zinc",        AssetClass.COMMODITY, Exchange.MCX, yfinance_ticker="ZNC=F", lot_size=5000,  tick_size=0.05, segment="Base Metal"),
-    Instrument("LEAD",       "Lead",        AssetClass.COMMODITY, Exchange.MCX, yfinance_ticker="LE=F",  lot_size=5000,  tick_size=0.05, segment="Base Metal"),
-    Instrument("NICKEL",     "Nickel",      AssetClass.COMMODITY, Exchange.MCX, yfinance_ticker="NI=F",  lot_size=1500,  tick_size=0.1,  segment="Base Metal"),
-    Instrument("COTTON",     "Cotton",      AssetClass.COMMODITY, Exchange.MCX, yfinance_ticker="CT=F",  lot_size=25,    tick_size=10.0, segment="Agri"),
+    Instrument("GOLD",       "Gold",        AssetClass.COMMODITY, Exchange.MCX, dhan_security_id="626",   lot_size=100,   tick_size=1.0,  segment="Precious Metal"),
+    Instrument("SILVER",     "Silver",      AssetClass.COMMODITY, Exchange.MCX, dhan_security_id="622",   lot_size=30000, tick_size=1.0,  segment="Precious Metal"),
+    Instrument("CRUDEOIL",   "Crude Oil",   AssetClass.COMMODITY, Exchange.MCX, dhan_security_id="615",   lot_size=100,   tick_size=1.0,  segment="Energy"),
+    Instrument("NATURALGAS", "Natural Gas", AssetClass.COMMODITY, Exchange.MCX, dhan_security_id="617",   lot_size=1250,  tick_size=0.1,  segment="Energy"),
+    Instrument("COPPER",     "Copper",      AssetClass.COMMODITY, Exchange.MCX, dhan_security_id="616",   lot_size=2500,  tick_size=0.05, segment="Base Metal"),
+    Instrument("ALUMINIUM",  "Aluminium",   AssetClass.COMMODITY, Exchange.MCX, dhan_security_id="13069", lot_size=5000,  tick_size=0.05, segment="Base Metal"),
+    Instrument("ZINC",       "Zinc",        AssetClass.COMMODITY, Exchange.MCX, dhan_security_id="619",   lot_size=5000,  tick_size=0.05, segment="Base Metal"),
+    Instrument("LEAD",       "Lead",        AssetClass.COMMODITY, Exchange.MCX, dhan_security_id="620",   lot_size=5000,  tick_size=0.05, segment="Base Metal"),
+    Instrument("NICKEL",     "Nickel",      AssetClass.COMMODITY, Exchange.MCX, dhan_security_id="621",   lot_size=1500,  tick_size=0.1,  segment="Base Metal"),
+    Instrument("COTTON",     "Cotton",      AssetClass.COMMODITY, Exchange.MCX, dhan_security_id="631",   lot_size=25,    tick_size=10.0, segment="Agri"),
 ]
 
 # ─────────────────────────────────────────────────────────────────
-# LIQUID ETFs
+# LIQUID ETFs  (dhan_security_id = NSE_EQ security IDs)
 # ─────────────────────────────────────────────────────────────────
 LIQUID_ETFS = [
-    Instrument("NIFTYBEES",  "Nippon Nifty BeES ETF",  AssetClass.ETF, Exchange.NSE, yfinance_ticker="NIFTYBEES.NS",  segment="Broad"),
-    Instrument("BANKBEES",   "Nippon Bank BeES ETF",   AssetClass.ETF, Exchange.NSE, yfinance_ticker="BANKBEES.NS",   segment="Banking"),
-    Instrument("GOLDBEES",   "Nippon Gold BeES ETF",   AssetClass.ETF, Exchange.NSE, yfinance_ticker="GOLDBEES.NS",   segment="Gold"),
-    Instrument("JUNIORBEES", "Nippon Junior BeES ETF", AssetClass.ETF, Exchange.NSE, yfinance_ticker="JUNIORBEES.NS", segment="Midcap"),
-    Instrument("ITBEES",     "Nippon IT BeES ETF",     AssetClass.ETF, Exchange.NSE, yfinance_ticker="ITBEES.NS",     segment="IT"),
-    Instrument("CPSEETF",    "CPSE ETF",               AssetClass.ETF, Exchange.NSE, yfinance_ticker="CPSEETF.NS",    segment="PSU"),
+    Instrument("NIFTYBEES",  "Nippon Nifty BeES ETF",  AssetClass.ETF, Exchange.NSE, dhan_security_id="6191",  segment="Broad"),
+    Instrument("BANKBEES",   "Nippon Bank BeES ETF",   AssetClass.ETF, Exchange.NSE, dhan_security_id="8382",  segment="Banking"),
+    Instrument("GOLDBEES",   "Nippon Gold BeES ETF",   AssetClass.ETF, Exchange.NSE, dhan_security_id="8869",  segment="Gold"),
+    Instrument("JUNIORBEES", "Nippon Junior BeES ETF", AssetClass.ETF, Exchange.NSE, dhan_security_id="7203",  segment="Midcap"),
+    Instrument("ITBEES",     "Nippon IT BeES ETF",     AssetClass.ETF, Exchange.NSE, dhan_security_id="14428", segment="IT"),
+    Instrument("CPSEETF",    "CPSE ETF",               AssetClass.ETF, Exchange.NSE, dhan_security_id="19923", segment="PSU"),
 ]
 
 

@@ -3,26 +3,27 @@
 scripts/download_data.py — Bulk historical data downloader
 
 INTENT:
-    Downloads 5 years of 5m (or 1m) OHLCV data for every instrument in the
-    universe from Dhan API and stores it as Parquet files in data/cache/.
-    Once downloaded, all backtests run from cache — zero API calls, zero
-    rate limit issues, works offline forever.
+    Downloads 5 years of 1m OHLCV data for all 536 instruments from the
+    Dhan API and stores them as Parquet files. Once downloaded, all backtests
+    run from cache — zero API calls, zero rate limit issues, works offline.
 
-USAGE:
-    python scripts/download_data.py                    # 5m data, all instruments
-    python scripts/download_data.py --interval 1m      # 1m data (larger files)
-    python scripts/download_data.py --resume           # Skip already-downloaded
-    python scripts/download_data.py --nifty50          # Nifty 50 only (fast test)
-    python scripts/download_data.py --delay 0.5        # Slower = safer rate limit
+    536 instruments:
+      498 Nifty 500 equities  (all with real Dhan security IDs)
+       22 indices              (Nifty, Bank Nifty, sectoral — Dhan IDX_I)
+       10 commodities          (Gold, Crude, etc. — Dhan MCX_COMM)
+        6 ETFs                 (NiftyBeES, BankBeES, etc. — Dhan NSE_EQ)
 
-STORAGE ESTIMATE:
-    5m data: ~50MB per instrument × 536 instruments = ~26GB total
-    1m data: ~250MB per instrument × 536 instruments = ~134GB total
+DATA SOURCE:
+    Dhan API only. No Yahoo Finance. Yahoo caps 1m data at 8 days — useless.
 
 RATE LIMIT:
-    Dhan allows 5 req/sec. We use 0.35s delay = ~2.8 req/sec (safe).
-    Each instrument needs ~22 batches (5yr / 85 days).
-    536 instruments × 22 batches × 0.35s = ~1.1 hours total.
+    Dhan API limit: 10 req/s.
+    We sleep 0.2s between each batch call = 5 req/s = 50% of limit.
+    Each instrument = ~22 batches (5yr ÷ 85-day windows).
+    536 instruments × 22 batches × 0.2s = ~39 minutes total.
+
+STORAGE:
+    1m data: ~250MB per instrument × 536 = ~134GB total on disk.
 """
 
 import sys
@@ -41,7 +42,7 @@ from rich.table import Table
 
 from data.universe import (
     NIFTY50_STOCKS, NIFTY_NEXT50_STOCKS,
-    get_equity_universe, get_index_universe, get_commodity_universe
+    get_equity_universe, get_index_universe, get_commodity_universe, get_etf_universe
 )
 from data.fetcher import fetch_ohlcv
 
@@ -110,10 +111,11 @@ def main():
         console.print(f"[yellow]Mode: Nifty 100 ({len(instruments)} instruments)[/yellow]")
     else:
         instruments = (
-            get_equity_universe()
-            + get_index_universe()
-            + get_commodity_universe()
-        )
+            get_equity_universe()      # 498 Nifty 500 stocks
+            + get_index_universe()     # 22 indices
+            + get_commodity_universe() # 10 commodities
+            + get_etf_universe()       # 6 ETFs
+        )                              # = 536 total
         console.print(f"[green]Mode: Full universe ({len(instruments)} instruments)[/green]")
 
     # ── RESUME LOGIC ──────────────────────────────────────────────────────────
@@ -135,8 +137,8 @@ def main():
 
     # ── TIME / STORAGE ESTIMATE ───────────────────────────────────────────────
     batches_per_instrument = max(1, int(args.years * 365 / 85) + 1)
-    BATCH_DELAY = 0.35  # seconds between each Dhan API batch call
-    est_seconds = len(remaining) * batches_per_instrument * BATCH_DELAY
+    BATCH_DELAY_S = 0.2  # 0.2s per batch = 5 req/s = 50% of Dhan's 10 req/s limit
+    est_seconds = len(remaining) * batches_per_instrument * BATCH_DELAY_S
     mb_per_instrument = 250 if args.interval == "1m" else 50
     console.print(f"[dim]Estimated time  : {est_seconds / 3600:.1f} hours ({est_seconds / 60:.0f} minutes)[/dim]")
     console.print(f"[dim]Storage estimate: ~{len(remaining) * mb_per_instrument // 1024}GB "

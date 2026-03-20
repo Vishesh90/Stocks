@@ -2,27 +2,29 @@
 data/fetcher.py — Historical OHLCV data fetcher
 
 INTENT:
-    Fetches historical data from Dhan API (primary) with Yahoo Finance as
-    automatic fallback. Caches to Parquet files so we never re-download what
-    we already have. The backtesting engine calls this — it never fetches
-    raw data directly.
+    Fetches historical OHLCV data exclusively from the Dhan API.
+    Caches to Parquet files so we never re-download what we already have.
+    The backtesting engine calls this — it never fetches raw data directly.
 
 IMPACT:
     Every strategy backtest depends on this. Bad data = bad backtest signals.
     The cache layer means backtests run at memory speed after first download.
 
 FUNCTIONS:
-    - fetch_ohlcv(): Main entry point — returns clean DataFrame
-    - fetch_dhan(): Dhan API historical data
-    - fetch_yfinance(): Yahoo Finance fallback
+    - fetch_ohlcv(): Main entry point — returns clean DataFrame (Dhan only)
+    - fetch_dhan(): Dhan API historical data with 85-day batch windowing
     - fetch_universe_data(): Bulk download for full universe
+
+RATE LIMIT:
+    Dhan API allows 10 req/s. We sleep 0.2s between batch calls = 5 req/s.
+    That is 50% of the limit — never touches the ceiling even under jitter.
 
 DEPENDENCIES:
     - config/settings.py
     - data/universe.py
 
 OWNED BY: Phase 1 — Data Pipeline
-LAST UPDATED: 2026-03-18
+LAST UPDATED: 2026-03-20
 """
 
 import os
@@ -162,7 +164,9 @@ def fetch_dhan(
                     logger.warning(f"Dhan batch {batch_from}→{batch_to} failed: {e}")
 
                 cursor = batch_end + timedelta(days=1)
-                time.sleep(0.35)  # Dhan rate limit: max 5 req/s, 0.35s = ~2.8 req/s (safe)
+                # Dhan API limit: 10 req/s. We sleep 0.2s = 5 req/s = 50% of limit.
+                # Never touches the limit even under network jitter.
+                time.sleep(0.2)
 
             if not all_dfs:
                 return None
@@ -334,13 +338,13 @@ def fetch_universe_data(
     interval: str = "1d",
     from_date: Optional[str] = None,
     to_date: Optional[str] = None,
-    delay_seconds: float = 0.3,
 ) -> dict[str, pd.DataFrame]:
     """
     Bulk fetch for all instruments in a universe.
 
     WHY: The backtesting engine and segment scorer both need data for many
-    instruments. Centralising this with rate-limiting prevents API bans.
+    instruments. Rate limiting is handled inside fetch_dhan() per batch —
+    no extra sleep needed here.
 
     Returns dict mapping symbol → DataFrame.
     """
@@ -352,7 +356,6 @@ def fetch_universe_data(
         df = fetch_ohlcv(instrument, interval=interval, from_date=from_date, to_date=to_date)
         if df is not None:
             results[instrument.symbol] = df
-        time.sleep(delay_seconds)  # Respect Dhan's 5 req/s limit
 
     logger.info(f"Fetched {len(results)}/{total} instruments successfully")
     return results
@@ -396,6 +399,9 @@ def _clean_ohlcv(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _dhan_exchange_segment(instrument: Instrument) -> str:
+    # Dhan uses different segment strings per asset class
+    if instrument.asset_class == AssetClass.INDEX:
+        return "IDX_I"
     exchange_map = {
         Exchange.NSE: "NSE_EQ",
         Exchange.BSE: "BSE_EQ",
