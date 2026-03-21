@@ -1,5 +1,5 @@
 """
-strategies/mathematical/__init__.py — 15 Mathematically Derived Strategies
+strategies/mathematical/__init__.py — 40 Mathematically Derived Strategies
 
 INTENT:
     These are not classical TA strategies. Each one is derived from a
@@ -7,25 +7,52 @@ INTENT:
     They are designed to capture market microstructure phenomena that
     classical indicators systematically miss.
 
-STRATEGIES:
+STRATEGIES (Original 15):
     1.  Kalman Filter Momentum — smoothed price trend via Bayesian filter
     2.  Ornstein-Uhlenbeck Mean Reversion — mean-reversion speed coefficient
     3.  Volatility Regime Switching — trade differently in high/low vol regimes
     4.  Hurst Exponent Trend Classifier — fractality-based trade filter
-    5.  Z-Score Pairs Divergence — statistical spread between correlated instruments
-    6.  Adaptive RSI (ARSI) — RSI period adapts to cycle length via Hilbert transform
-    7.  Entropy-Based Breakout — Shannon entropy detects information compression
-    8.  GARCH Volatility Forecast — GARCH(1,1) predicts next-period volatility
+    5.  Entropy-Based Breakout — Shannon entropy detects information compression
+    6.  Polynomial Regression Channel — price deviation from polynomial fit
+    7.  Adaptive RSI (ARSI) — RSI period adapts to cycle length
+    8.  Spectral Momentum (FFT) — dominant frequency component as signal
     9.  Autocorrelation Momentum — momentum only when serial correlation is positive
-    10. Polynomial Regression Channel — price deviation from polynomial fit
-    11. Spectral Momentum (FFT) — dominant frequency component as signal
-    12. Fractal Adaptive MA (FRAMA) — Mandelbrot fractal dimension adaptive EMA
-    13. Maximum Adverse Excursion (MAE) Optimised Entry — enter only when MAE risk low
-    14. Kelly-Optimal Sizing Signal — signal fires only when Kelly fraction > threshold
-    15. Half-Life Mean Reversion Filter — OU half-life determines trade horizon
+    10. Fractal Adaptive MA (FRAMA) — Mandelbrot fractal dimension adaptive EMA
+    11. Half-Life Mean Reversion Filter — OU half-life determines trade horizon
+    12. Volume-Weighted Momentum — volume-confirmed price moves
+    13. Regime-Conditioned Stochastic — ADX-conditioned stochastic oscillator
+    14. Price Velocity + Acceleration — Newtonian dynamics on price
+    15. Multi-Timeframe Convergence — 3-timeframe trend agreement
 
-OWNED BY: Phase 1 — Mathematical Strategy Layer
-LAST UPDATED: 2026-03-18
+STRATEGIES (Advanced 25 — see strategies/mathematical/advanced.py):
+    16. Fokker-Planck Density Forecaster — PDE-based probability density evolution
+    17. Lévy Flight Detector — fat-tail jump process identification
+    18. Rényi Entropy Divergence — generalised entropy for regime detection
+    19. Wavelet Denoised Momentum — multi-resolution signal extraction
+    20. Kramers-Moyal Drift Estimator — non-parametric SDE coefficient estimation
+    21. Fisher Information Regime Detector — information geometry curvature
+    22. Ising Model Phase Transition — statistical mechanics critical point detection
+    23. Optimal Transport Divergence — Wasserstein distance for distribution shift
+    24. Hawkes Process Event Clustering — self-exciting point process
+    25. Variational Mode Decomposition — adaptive signal decomposition
+    26. Fractional Brownian Motion Estimator — long-memory process identification
+    27. Maximum Entropy Spectrum (Burg) — super-resolution spectral estimation
+    28. Granger Causality Volume→Price — information flow detection
+    29. Tsallis Non-Extensive Entropy — non-Gaussian tail risk quantification
+    30. Langevin Dynamics Momentum — overdamped particle in potential well
+    31. Mutual Information Rate — non-linear dependence between timeframes
+    32. Empirical Mode Decomposition — Hilbert-Huang transform
+    33. Bayesian Online Changepoint Detection — real-time structural break detection
+    34. Heston Stochastic Volatility — vol-of-vol regime identification
+    35. Kolmogorov-Smirnov Distribution Shift — non-parametric distribution change
+    36. Lyapunov Exponent Chaos Detector — deterministic chaos identification
+    37. Copula Tail Dependence — joint extreme event modelling
+    38. Spectral Gap Estimator — mixing time of price Markov chain
+    39. Information Ratio Adaptive Sizing — Kelly-optimal with regime conditioning
+    40. Persistent Homology Topological Signal — TDA-based pattern recognition
+
+OWNED BY: Phase 1+2 — Mathematical Strategy Layer
+LAST UPDATED: 2026-03-21
 """
 
 import numpy as np
@@ -1170,8 +1197,8 @@ class MultiTimeframeConvergence(BaseStrategy):
 # REGISTRY
 # ─────────────────────────────────────────────────────────────────
 
-def get_all_mathematical_strategies() -> list[BaseStrategy]:
-    """Returns all 15 mathematical strategies for the backtesting engine."""
+def get_original_mathematical_strategies() -> list[BaseStrategy]:
+    """Returns the original 15 mathematical strategies."""
     return [
         KalmanFilterMomentum(observation_noise=1.0, process_noise=0.01),
         OrnsteinUhlenbeckMeanReversion(window=60, z_threshold=2.0),
@@ -1189,3 +1216,9 @@ def get_all_mathematical_strategies() -> list[BaseStrategy]:
         PriceVelocityAcceleration(smooth=5, direction="both"),
         MultiTimeframeConvergence(ema_fast=9, ema_slow=21, mult=3),
     ]
+
+
+def get_all_mathematical_strategies() -> list[BaseStrategy]:
+    """Returns all 40 mathematical strategies (15 original + 25 advanced)."""
+    from strategies.mathematical.advanced import get_all_advanced_strategies
+    return get_original_mathematical_strategies() + get_all_advanced_strategies()
