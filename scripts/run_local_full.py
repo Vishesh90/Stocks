@@ -216,7 +216,6 @@ def main():
             instrument_data = fetch_universe_data(
                 [instrument],
                 interval=args.interval,
-                delay_seconds=0.2,
             )
         except Exception as e:
             logger.warning(f"  {symbol}: data fetch failed — {e}")

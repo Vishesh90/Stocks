@@ -64,7 +64,6 @@ def main():
     instrument_data = fetch_universe_data(
         instruments,
         interval=args.interval,
-        delay_seconds=0.3,
     )
     console.print(f"[green]{len(instrument_data)} instruments with data[/green]")
 
